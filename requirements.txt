@@ -1,0 +1,22 @@
+# Rule Engine Module Dependencies
+
+# Core dependencies
+asteval==0.9.31         # Safe expression evaluation for rule conditions
+PyYAML==6.0.1          # YAML file support for rules
+
+# PDF Processing (for full integration)
+PyPDF2==3.0.1          # PDF extraction
+
+# Optional dependencies
+# These are included for future enhancements
+
+# Development/Testing
+# pytest==7.4.3        # Testing framework (alternative to unittest)
+# pytest-cov==4.1.0    # Test coverage
+
+# Documentation
+# sphinx==7.2.6        # Documentation generation
+
+# Linting/Formatting
+# black==23.12.0       # Code formatting
+# flake8==6.1.0        # Linting
