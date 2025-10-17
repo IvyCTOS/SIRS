@@ -1,9 +1,11 @@
-from jinja2 import Environment, BaseLoader, Template
-from typing import Any, Dict, Optional
+from jinja2 import Environment, BaseLoader
+from typing import Any, Dict
 import json
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
+from string import Template
 
 class TemplateError(Exception):
     """Custom exception for template rendering errors"""
@@ -110,6 +112,48 @@ class TemplateRenderer:
         except Exception as e:
             self.logger.error(f"Template rendering error: {str(e)}")
             raise TemplateError(f"Failed to render template: {str(e)}")
+
+    def render_template_simple(self, template: str, data: Dict[str, Any]) -> str:
+        """Render template with data, formatting numbers appropriately"""
+        try:
+            # Format numeric values
+            formatted_data = {}
+            for key, value in data.items():
+                if isinstance(value, float):
+                    if key in ['creditutilizationratio', 'utilization']:
+                        formatted_data[key] = f"{value:.1f}"
+                    elif key in ['balance', 'limit']:
+                        formatted_data[key] = f"RM {value:,.2f}"
+                    else:
+                        formatted_data[key] = f"{value:.2f}"
+                else:
+                    formatted_data[key] = str(value)
+
+            # Use string Template for safe substitution
+            return Template(template).safe_substitute(formatted_data)
+            
+        except Exception as e:
+            self.logger.error(f"Template rendering error: {e}")
+            return template
+
+    def _format_values(self, data: Dict[str, Any]) -> Dict[str, str]:
+        """Format values appropriately based on type and key name"""
+        formatted = {}
+        
+        for key, value in data.items():
+            if isinstance(value, float):
+                if key in ['creditutilizationratio', 'utilization']:
+                    formatted[key] = f"{value:.1f}"
+                elif key in ['balance', 'limit']:
+                    formatted[key] = f"RM {value:,.2f}"
+                else:
+                    formatted[key] = f"{value:.2f}"
+            elif isinstance(value, bool):
+                formatted[key] = str(value).lower()
+            else:
+                formatted[key] = str(value)
+                
+        return formatted
 
 def main():
     # Example usage

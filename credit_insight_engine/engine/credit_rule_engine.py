@@ -3,211 +3,147 @@ Rule Engine Module for Credit Behavior Insight Engine
 Evaluates normalized credit data against predefined behavioral rules
 """
 
+from pathlib import Path
+from typing import Dict, List, Any
 import json
-from asteval import Interpreter
-from typing import Dict, List, Tuple, Any
+import logging
+from engine.condition_parser import ConditionParser, ParserError
+from engine.template_renderer import TemplateRenderer
 
 
 class RuleEngine:
     """
-    Core rule engine for evaluating credit behavior rules
+    Loads rule definitions from a JSON file and evaluates them against input records.
+    Uses ConditionParser to safely evaluate conditions and TemplateRenderer to render messages.
     """
-    
-    def __init__(self, rules_file: str, file_format: str = 'json'):
-        """
-        Initialize the rule engine
-        
-        Args:
-            rules_file: Path to rules file
-            file_format: Format of rules file ('json' or 'yaml')
-        """
-        self.rules_file = rules_file
-        self.file_format = file_format
-        self.rules = []
-        self.evaluator = Interpreter()
-        
-        # Load rules on initialization
-        self.load_rules()
-    
-    def load_rules(self) -> List[Dict]:
-        """
-        Load rules from JSON or YAML file
-        
-        Returns:
-            List of rule dictionaries
-        """
+
+    # Add a small alias map for template variables -> normalized record keys
+    FIELD_ALIASES = {
+        'Facility': 'loantype',
+        'Lender_Type': 'lendertype',
+        'Loan_Type': 'loan_type',
+        'Balance': 'balance',
+        'Limit': 'limit',
+        'CreditUtilizationRatio': 'creditutilizationratio',
+        'creditutilizationratio': 'creditutilizationratio',
+        'numberofloans': 'numberofloans',
+        'numapplicationslast12months': 'numapplicationslast12months',
+        'payment_conduct_code': 'mon_arrears',
+        'paymentConductCode': 'mon_arrears'
+    }
+
+    def __init__(self, rules_file: str):
+        self.rules_file = Path(rules_file)
+        self.logger = logging.getLogger(__name__)
+        self.parser = ConditionParser()
+        self.renderer = TemplateRenderer()
+        self.rules = self._load_rules()
+
+    def _load_rules(self) -> List[Dict[str, Any]]:
+        """Load and validate rules from JSON file"""
         try:
-            with open(self.rules_file, 'r', encoding='utf-8') as file:
-                if self.file_format == 'json':
-                    data = json.load(file)
-                
-                self.rules = data.get('rules', [])
-                print(f"✓ Loaded {len(self.rules)} rules from {self.rules_file}")
-                return self.rules
-                
-        except FileNotFoundError:
-            print(f"✗ Error: Rules file not found: {self.rules_file}")
-            raise
-        except json.JSONDecodeError as e:
-            print(f"✗ Error: Invalid JSON format in rules file: {e}")
-            raise
+            with open(self.rules_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data.get('rules', [])
         except Exception as e:
-            print(f"✗ Error loading rules: {e}")
+            self.logger.error(f"Failed to load rules: {e}")
             raise
-    
-    def evaluate_rule(self, data: Dict, rule: Dict) -> bool:
+
+    def _apply_template_aliases(self, template: str) -> str:
+        """Replace known template variable names (from rules) with normalized keys for rendering."""
+        if not template:
+            return template
+        # replace both {{Var}} and {Var} occurrences
+        for alias, real_key in self.FIELD_ALIASES.items():
+            # Jinja style
+            template = template.replace(f"{{{{{alias}}}}}", f"{{{{ {real_key} }}}}")
+            template = template.replace(f"{{{{ {alias} }}}}", f"{{{{ {real_key} }}}}")
+            # Python-style single braces
+            template = template.replace(f"{{{alias}}}", f"{{{real_key}}}")
+            template = template.replace(f"{{ {alias} }}", f"{{ {real_key} }}")
+        return template
+
+    def _build_render_context(self, record: Dict[str, Any], personal_info: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Evaluate a single rule's condition against the data
-        
-        Args:
-            data: Dictionary containing the data to evaluate
-            rule: Rule dictionary containing the condition
-            
-        Returns:
-            True if condition is met, False otherwise
+        Build rendering context, merging record + personal_info and adding formatted variants.
+        Includes keys for both normalized names and some formatted display forms.
         """
-        condition = rule.get('condition', '')
-        
-        if not condition:
-            return False
-        
+        ctx = {**personal_info, **record}
+        # Add formatted versions used in templates
         try:
-            # Evaluate the condition using asteval
-            # Pass data as local variables for the condition
-            result = self.evaluator(condition, data)
-            return bool(result)
+            if 'creditutilizationratio' in ctx:
+                ctx['creditutilizationratio'] = float(ctx['creditutilizationratio'])
+            if 'balance' in ctx:
+                ctx['balance'] = float(ctx.get('balance', 0.0))
+            if 'limit' in ctx:
+                ctx['limit'] = float(ctx.get('limit', 0.0))
+            # Friendly aliases used by some templates
+            ctx['Facility'] = ctx.get('loantype', '')
+            ctx['Lender_Type'] = ctx.get('lendertype', '')
+            # Also provide basic formatted strings
+            ctx['balance_display'] = f"RM {ctx.get('balance', 0):,.2f}" if ctx.get('balance') is not None else ""
+            ctx['limit_display'] = f"RM {ctx.get('limit', 0):,.2f}" if ctx.get('limit') is not None else ""
+            ctx['creditutilizationratio_display'] = f"{ctx.get('creditutilizationratio', 0):.1f}"
+        except Exception:
+            pass
+        return ctx
+
+    def process_data(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Process normalized data structure containing records and personal info"""
+        matches = []
+        seen_insights = set()  # Track unique insights
+        
+        # Extract records array and personal info
+        records = data.get('records', [])
+        personal_info = data.get('personal_info', {})
+        
+        self.logger.info(f"Processing {len(records)} records")
+        
+        # Process each record
+        for record in records:
+            # Merge personal info into record for template rendering
+            record_with_info = {**record, **personal_info}
             
-        except Exception as e:
-            print(f"  Warning: Error evaluating condition '{condition}': {e}")
-            return False
-    
-    def generate_insight(self, data: Dict, rule: Dict) -> Tuple[str, str, str]:
-        """
-        Generate insight message and recommendation from matched rule
-        
-        Args:
-            data: Dictionary containing the data values
-            rule: Matched rule dictionary
+            # Build rendering context once per record
+            render_ctx = self._build_render_context(record, personal_info)
             
-        Returns:
-            Tuple of (label, insight_message, recommendation)
-        """
-        try:
-            label = rule.get('label', '')
-            compound_type = rule.get('compound_type', '')
-            template = rule.get('template', '')
-            recommendation = rule.get('recommendation', '')
-            
-            # Render template with data using string formatting
-            # Handle missing keys gracefully
-            insight_message = self._render_template(template, data)
-            
-            return label, compound_type, insight_message, recommendation
-            
-        except Exception as e:
-            print(f"  Warning: Error generating insight: {e}")
-            return '', '', '', ''
-    
-    def _render_template(self, template: str, data: Dict) -> str:
-        """
-        Render template string with data, handling missing keys
-        
-        Args:
-            template: Template string with {placeholders}
-            data: Dictionary with values
-            
-        Returns:
-            Rendered string
-        """
-        try:
-            # Use format_map with a defaultdict-like behavior
-            return template.format(**data)
-        except KeyError as e:
-            # If a key is missing, return template with available data filled in
-            print(f"  Warning: Missing key in template: {e}")
-            # Try to fill in what we can
-            import re
-            result = template
-            for key, value in data.items():
-                pattern = '{' + key + '}'
-                if pattern in result:
-                    result = result.replace(pattern, str(value))
-            return result
-    
-    def process_data_with_rules(self, data: Dict) -> Tuple[str, str, str, str]:
-        """
-        Process a single data record against all rules
-        Returns the first matching rule's insight
-        
-        Args:
-            data: Dictionary containing data to evaluate
-            
-        Returns:
-            Tuple of (label, compound_type, insight, recommendation)
-            Returns (None, None, None, None) if no rules match
-        """
-        for rule in self.rules:
-            if self.evaluate_rule(data, rule):
-                return self.generate_insight(data, rule)
-        
-        return None, None, None, None
-    
-    def process_all_records(self, records: List[Dict]) -> List[Dict]:
-        """
-        Process multiple data records against all rules
-        
-        Args:
-            records: List of data dictionaries to evaluate
-            
-        Returns:
-            List of insight dictionaries
-        """
-        insights = []
-        
-        for idx, record in enumerate(records):
-            label, compound_type, insight, recommendation = self.process_data_with_rules(record)
-            
-            if label:  # If a rule matched
-                insights.append({
-                    'record_index': idx,
-                    'label': label,
-                    'compound_type': compound_type,
-                    'insight': insight,
-                    'recommendation': recommendation,
-                    'source_data': record
-                })
-        
-        return insights
-    
-    def generate_report(self, insights: List[Dict]) -> Dict:
-        """
-        Generate a structured report from insights
-        
-        Args:
-            insights: List of insight dictionaries
-            
-        Returns:
-            Report dictionary with summary and details
-        """
-        # Group insights by label
-        grouped = {}
-        for insight in insights:
-            label = insight['label']
-            if label not in grouped:
-                grouped[label] = []
-            grouped[label].append(insight)
-        
-        # Count by severity/label
-        label_counts = {label: len(items) for label, items in grouped.items()}
-        
-        report = {
-            'total_insights': len(insights),
-            'insights_by_label': grouped,
-            'label_counts': label_counts,
-            'all_insights': insights
-        }
-        
-        return report
+            # Check each rule against the record
+            for rule in self.rules:
+                try:
+                    condition = rule.get('condition', '')
+                    if not condition:
+                        continue
+                        
+                    if self.parser.evaluate(condition, record):
+                        # Rule matched - prepare insight
+                        template = rule.get('template', '') or ''
+                        # Apply alias substitutions so templates refer to normalized keys
+                        template_for_render = self._apply_template_aliases(template)
+                        # Render with Jinja via TemplateRenderer
+                        message = self.renderer.render_template(template_for_render, render_ctx) if template_for_render else ''
+                        
+                        # Create insight key for deduplication
+                        insight_key = f"{rule.get('label')}:{message}"
+                        if insight_key in seen_insights:
+                            continue
+                            
+                        seen_insights.add(insight_key)
+                        
+                        insight = {
+                            'label': rule.get('label', ''),
+                            'type': rule.get('compound_type', ''),
+                            'message': message,
+                            'recommendation': rule.get('recommendation', ''),
+                            'severity': 'high' if rule.get('priority', '').lower() in ('high', 'critical') or '🔴' in rule.get('label', '') else 'medium',
+                            'data': record  # Include raw data if needed downstream
+                        }
+                        matches.append(insight)
+                except Exception as e:
+                    self.logger.error(f"Error evaluating rule {rule.get('label')}: {e}")
+                    continue
+                    
+        self.logger.info(f"Found {len(matches)} unique matches")
+        return matches
 
 
 def save_report(report: Dict, output_file: str):
