@@ -7,6 +7,9 @@ PyYAML==6.0.1          # YAML file support for rules
 # PDF Processing (for full integration)
 PyPDF2==3.0.1          # PDF extraction
 
+# Template Rendering
+Jinja2==3.1.2          # Templating engine for generating insights
+
 # Optional dependencies
 # These are included for future enhancements
 
