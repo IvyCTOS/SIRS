@@ -1,0 +1,130 @@
+{
+  "rules": [
+    {
+      "label": "🔴 High Utilization",
+      "compound_type": "Revolving Credit Overuse",
+      "condition": "creditutilizationratio > 80",
+      "template": "Your {loantype} with {lendertype} has a utilization rate of {creditutilizationratio}% — well above the recommended threshold.",
+      "recommendation": "Credit utilization above 30% can signal financial stress to lenders. Aim to pay off balances early in the billing cycle, or request a credit limit increase if your income supports it. This helps improve your credit score and borrowing power."
+    },
+    {
+      "label": "🔴 High Utilization",
+      "compound_type": "Multiple Active Loans",
+      "condition": "numberofloans > 5",
+      "template": "You currently have {numberofloans} active loans, which may indicate over-reliance on credit.",
+      "recommendation": "Managing multiple loans can be challenging. Consider consolidating them into a single facility with better terms to reduce your monthly obligations and improve your credit profile."
+    },
+    {
+      "label": "🔴 High Utilization",
+      "compound_type": "Maxed Out Credit",
+      "condition": "balance >= limit",
+      "template": "Your {loan_type} is fully utilized with RM {balance} out of RM {limit}.",
+      "recommendation": "Maxing out your credit lines can negatively impact your score. Try to reduce your balance and avoid using more than 30% of your available limit to maintain a healthy credit standing."
+    },
+    {
+      "label": "🟠 Missed Payments",
+      "compound_type": "Long-Term Delinquency",
+      "condition": "mon_arrears >= 3 and inst_arrears >= 3",
+      "template": "Your {loantype} has missed payments for {mon_arrears} months, with {inst_arrears} installments overdue.",
+      "recommendation": "Missed payments can stay on your credit report for years. Reach out to your lender to negotiate a payment plan or restructuring. Setting up auto-debit or reminders can help prevent future delays."
+    },
+    {
+      "label": "🟠 Missed Payments",
+      "compound_type": "Near Default",
+      "condition": "mon_arrears >= 6",
+      "template": "Your {loantype} is nearing default status with {mon_arrears} months of missed payments.",
+      "recommendation": "Contact your lender immediately to avoid default. Explore restructuring or hardship programs to regain control."
+    },
+    {
+      "label": "🟠 Missed Payments",
+      "compound_type": "Recent Missed Payment",
+      "condition": "lastpaymentstatus == 'missed' and daysincepayment <= 30",
+      "template": "A payment was missed recently on your {loantype} with {lendertype}.",
+      "recommendation": "A recent missed payment can affect your score. Make the payment as soon as possible and consider setting up automatic payments to avoid future issues."
+    },
+    {
+      "label": "🟠 Missed Payments",
+      "compound_type": "Settled After Arrears",
+      "condition": "previousstatus == 'arrears' and currentstatus == 'settled'",
+      "template": "Your {loan_type} was previously in arrears but has now been settled.",
+      "recommendation": "Settling overdue accounts is a positive step. Continue making timely payments and monitor your credit report to ensure the account is updated correctly."
+    },
+    {
+      "label": "🟡 Frequent Applications",
+      "compound_type": "High Application Volume",
+      "condition": "numapplicationslast12months > 3",
+      "template": "You've applied for {numapplicationslast12months} facilities in the past year.",
+      "recommendation": "Each credit application may trigger a hard inquiry, which can lower your score temporarily. Plan your credit needs ahead and apply only when necessary. Consider pre-qualification tools to check eligibility without affecting your score."
+    },
+    {
+      "label": "🟡 Frequent Applications",
+      "compound_type": "Multiple Pending Applications",
+      "condition": "numpendingapplications > 1",
+      "template": "You have {numpendingapplications} applications still pending.",
+      "recommendation": "Pending applications may indicate uncertainty. Review your financial needs and wait for current applications to be processed before submitting new ones."
+    },
+    {
+      "label": "🟡 Frequent Applications",
+      "compound_type": "Multiple Declined Applications",
+      "condition": "decline_rate > 50",
+      "template": "Half of your recent applications have been declined.",
+      "recommendation": "Frequent rejections can hurt your score. Review your credit profile and improve key areas before reapplying."
+    },
+    {
+      "label": "🟣 Thin Credit File",
+      "compound_type": "Few Account Types",
+      "condition": "distinct_account_types <= 2",
+      "template": "Your credit file shows limited diversity, with only {distinct_account_types} account types.",
+      "recommendation": "A diverse credit mix shows lenders you can manage different types of credit responsibly. If eligible, consider opening a secured credit card or small installment loan and maintain consistent payments to build history."
+    },
+    {
+      "label": "🟣 Thin Credit File",
+      "compound_type": "No Installment History",
+      "condition": "has_installment_loan == False",
+      "template": "Your credit file has 0 installment loan history.",
+      "recommendation": "Adding a small installment loan and repaying it on time can help diversify your credit and build a stronger profile."
+    },
+    {
+      "label": "🟣 Thin Credit File",
+      "compound_type": "Non-Bank Dominance",
+      "condition": "nonbank_ratio > 0.7",
+      "template": "Most of your accounts are with non-bank lenders ({nonbank_percentage}%).",
+      "recommendation": "Bank-issued credit is often viewed more favorably. Consider adding bank-based credit products to strengthen your credit profile."
+    },
+    {
+      "label": "⚪ Short Credit History",
+      "compound_type": "New Accounts Only",
+      "condition": "monthssinceapproval < 24",
+      "template": "Your oldest account is only {monthssinceapproval} months old.",
+      "recommendation": "A longer credit history contributes positively to your score. Keep existing accounts open and active to build a stronger credit timeline."
+    },
+    {
+      "label": "⚪ Short Credit History",
+      "compound_type": "Recent Enquiries",
+      "condition": "recent_enquiries >= 3",
+      "template": "You've made {recent_enquiries} recent enquiries in the last 30 days.",
+      "recommendation": "Frequent enquiries can lower your score. Limit applications and use pre-qualification tools to assess eligibility without impacting your credit."
+    },
+    {
+      "label": "⚫ Legal Risk",
+      "compound_type": "Legal Action Taken",
+      "condition": "legal_action_flag == True",
+      "template": "Legal action was initiated on your {facility} account.",
+      "recommendation": "Legal actions and write-offs can severely impact creditworthiness. Review the details with a financial counselor or legal advisor. If possible, negotiate a settlement and request a 'paid as agreed' update on your credit file."
+    },
+    {
+      "label": "⚫ Legal Risk",
+      "compound_type": "Written-Off Account",
+      "condition": "account_status == 'written-off' and balance > 0",
+      "template": "Your {facility} account has been written off with RM {balance} outstanding.",
+      "recommendation": "Written-off accounts are serious derogatory marks. Contact your lender to explore settlement options and request updates to your credit report once resolved."
+    },
+    {
+      "label": "⚫ Legal Risk",
+      "compound_type": "Multiple Reminder Letters",
+      "condition": "reminderlettercount >= 3",
+      "template": "{reminderlettercount} reminder letters have been sent for your {debt_type} account.",
+      "recommendation": "Multiple reminders suggest persistent delinquency. Act quickly to resolve the issue and prevent escalation to legal action or collections."
+    }
+  ]
+}
