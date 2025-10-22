@@ -104,7 +104,9 @@ class TemplateRenderer:
             'limit': 0.0,
             'creditutilizationratio': 0.0,
             'case_types': '',
-            'case_details': ''
+            'case_details': '',
+            'oldest_account_years': 0.0,
+            'oldest_account_months': 0
         }
         
         result = {**defaults, **data}
@@ -124,7 +126,7 @@ class TemplateRenderer:
     def render_template(self, template_string: str, data: Dict[str, Any]) -> str:
         """
         Render a template with provided data
-        FIXED: Better variable validation and error handling
+        FIXED: Preserves numeric types for Jinja2 filters
         
         Args:
             template_string: Template string with {{variable}} placeholders
@@ -157,8 +159,9 @@ class TemplateRenderer:
             # Apply fallbacks for missing data
             render_data = {**fallbacks, **data}
             
-            # Format numeric values appropriately
-            formatted_data = self._format_values(render_data)
+            # ✅ CRITICAL FIX: Prepare data WITHOUT converting to strings
+            # Let Jinja2 handle formatting with filters
+            formatted_data = self._prepare_render_context(render_data)
 
             # Create and render template
             template = self.env.from_string(template_str)
@@ -179,6 +182,26 @@ class TemplateRenderer:
             self.logger.error(f"Data keys: {list(data.keys())}")
             raise TemplateError(f"Failed to render template: {str(e)}")
 
+    def _prepare_render_context(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Prepare data for rendering - PRESERVE numeric types for filters
+        Only format display values that won't use filters
+        """
+        prepared = {}
+        
+        for key, value in data.items():
+            if value is None:
+                prepared[key] = ''
+            elif isinstance(value, bool):
+                prepared[key] = value  # Keep as boolean
+            elif isinstance(value, (int, float)):
+                # ✅ KEEP NUMERIC TYPES - Jinja2 filters need them
+                prepared[key] = value
+            else:
+                prepared[key] = str(value) if value is not None else ''
+                
+        return prepared
+
     def render_template_simple(self, template: str, data: Dict[str, Any]) -> str:
         """
         Render template with data, formatting numbers appropriately
@@ -186,8 +209,8 @@ class TemplateRenderer:
         For {{variable}} syntax, use render_template() instead
         """
         try:
-            # Format numeric values
-            formatted_data = self._format_values(data)
+            # Format numeric values for display
+            formatted_data = self._format_values_for_display(data)
 
             # Use string Template for safe substitution
             # Note: string.Template uses $variable, not {{variable}}
@@ -197,8 +220,11 @@ class TemplateRenderer:
             self.logger.error(f"Template rendering error: {e}")
             return template
 
-    def _format_values(self, data: Dict[str, Any]) -> Dict[str, str]:
-        """Format values appropriately based on type and key name"""
+    def _format_values_for_display(self, data: Dict[str, Any]) -> Dict[str, str]:
+        """
+        Format values for simple template display (converts to strings)
+        Only use this for templates that DON'T use Jinja2 filters
+        """
         formatted = {}
         
         for key, value in data.items():
@@ -234,18 +260,19 @@ def main():
     print("TEMPLATE RENDERER TESTING")
     print("="*60)
     
-    # Test 1: Complete data
-    print("\n[Test 1] Complete data:")
+    # Test 1: Complete data with numeric values
+    print("\n[Test 1] Numeric values with filters:")
     data1 = {
         'loantype': 'Credit Card',
         'Facility': 'Credit Card',
         'Lender_Type': 'CIMB Bank',
         'creditutilizationratio': 65.14,
         'balance': 5000.75,
-        'limit': 7000.00
+        'limit': 7000.00,
+        'oldest_account_years': 5.5
     }
     
-    template1 = "Your {{Facility}} with {{Lender_Type}} has a utilization rate of {{creditutilizationratio}}%"
+    template1 = "Your {{Facility}} with {{Lender_Type}} has {{creditutilizationratio:.1f}}% utilization"
     
     try:
         result = template_renderer.render_template(template1, data1)
@@ -253,20 +280,20 @@ def main():
     except TemplateError as e:
         print(f"✗ Error: {str(e)}")
     
-    # Test 2: Missing variable (should add default)
-    print("\n[Test 2] Missing variable:")
+    # Test 2: Using round filter
+    print("\n[Test 2] Using round filter:")
     data2 = {
-        'Lender_Type': 'Alliance Bank',
-        'creditutilizationratio': 85.0
-        # Missing: Facility
+        'loantype': 'Credit Card',
+        'lendertype': 'CIMB Bank',
+        'oldest_account_years': 21.8333,
+        'payment_conduct_code': 2
     }
     
-    template2 = "Your {{Facility}} with {{Lender_Type}} has {{creditutilizationratio}}% utilization"
+    template2 = "Your {{loantype}} with {{lendertype}} shows payment issues despite having {{oldest_account_years|round(1)}} years of credit history."
     
     try:
         result = template_renderer.render_template(template2, data2)
-        print(f"⚠  Result: {result}")
-        print("  (Note: 'Facility' was missing but default was added)")
+        print(f"✓ Result: {result}")
     except TemplateError as e:
         print(f"✗ Error: {str(e)}")
     

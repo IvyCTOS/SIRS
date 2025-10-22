@@ -1,6 +1,7 @@
 """
-CTOS Parser - XML VERSION
-Extracts data from CTOS XML reports instead of PDF
+CTOS Parser - XML VERSION (FIXED)
+Extracts data from CTOS XML reports with complete field mapping
+✅ Now rounds utilization to 1 decimal place
 """
 
 from datetime import datetime
@@ -31,12 +32,13 @@ class CTOSReportParser:
                 'name': self._extract_name(),
                 'ic_number': self._extract_ic(),
                 'ctos_score': self._extract_ctos_score(),
-                'numberofloans': 0,  # Will be calculated from loans
-                'total_outstanding': 0,  # Will be calculated from loans
-                'total_limit': 0,  # Will be calculated from loans
+                'numberofloans': 0,
+                'total_outstanding': 0,
+                'total_limit': 0,
                 'loans': self._extract_loans_from_ccris(),
                 'numapplicationslast12months': self._extract_applications(),
                 'numpendingapplications': self._extract_pending_applications(),
+                'numapprovedapplications': self._extract_approved_applications(),
                 'trade_references': self._extract_trade_references(),
                 'legal_cases': self._extract_legal_cases(),
                 'director_winding_up': self._extract_director_winding_up(),
@@ -46,7 +48,6 @@ class CTOSReportParser:
                 'distinct_account_types': 0
             }
             
-            # Log extracted legal cases
             self.logger.info(f"✓ Extracted legal_cases: {extracted_data.get('legal_cases', [])}")
             
             # Calculate totals from loans
@@ -64,7 +65,8 @@ class CTOSReportParser:
                     total_limit = sum(loan['limit'] for loan in revolving_loans)
                     
                     if total_limit > 0:
-                        extracted_data['creditutilizationratio'] = (total_balance / total_limit) * 100
+                        # ✅ Round to 1 decimal place
+                        extracted_data['creditutilizationratio'] = round((total_balance / total_limit) * 100, 1)
                         self.logger.info(f"Overall revolving utilization: {extracted_data['creditutilizationratio']:.1f}%")
                 
                 extracted_data['payment_conduct_code'] = max(
@@ -122,7 +124,6 @@ class CTOSReportParser:
     def _extract_applications(self) -> int:
         """Extract number of credit applications in past 12 months"""
         try:
-            # From CCRIS summary
             summary = self.root.find('.//ns:section_ccris/ns:summary/ns:application', self.ns)
             if summary is not None:
                 approved = summary.find('ns:approved', self.ns)
@@ -148,19 +149,28 @@ class CTOSReportParser:
             self.logger.error(f"Error extracting pending applications: {e}")
             return 0
 
+    def _extract_approved_applications(self) -> int:
+        """Extract number of approved applications"""
+        try:
+            summary = self.root.find('.//ns:section_ccris/ns:summary/ns:application/ns:approved', self.ns)
+            if summary is not None:
+                return int(summary.get('count', 0))
+            return 0
+        except Exception as e:
+            self.logger.error(f"Error extracting approved applications: {e}")
+            return 0
+
     def _extract_loans_from_ccris(self) -> List[Dict]:
         """Extract loans from CCRIS section"""
         loans = []
         
         try:
-            # Extract from regular accounts
             accounts = self.root.findall('.//ns:section_ccris/ns:accounts/ns:account', self.ns)
             for account in accounts:
                 loan = self._parse_account(account, is_special_attention=False)
                 if loan:
                     loans.append(loan)
             
-            # Extract from special attention accounts
             special_accounts = self.root.findall('.//ns:section_ccris/ns:special_attention_accs/ns:special_attention_acc', self.ns)
             for account in special_accounts:
                 loan = self._parse_account(account, is_special_attention=True)
@@ -175,11 +185,9 @@ class CTOSReportParser:
     def _parse_account(self, account_elem, is_special_attention=False) -> Dict:
         """Parse a single account element"""
         try:
-            # Extract basic info
             approval_date = self._get_text(account_elem, 'ns:approval_date')
             lender_type_elem = account_elem.find('ns:lender_type', self.ns)
             
-            # Get full lender name (text content), fallback to code attribute
             if lender_type_elem is not None:
                 lender = lender_type_elem.text.strip() if lender_type_elem.text else lender_type_elem.get('code', 'Unknown')
             else:
@@ -187,7 +195,6 @@ class CTOSReportParser:
             
             limit = float(self._get_text(account_elem, 'ns:limit', '0'))
             
-            # Extract sub-account (facility) info
             sub_account = account_elem.find('.//ns:sub_account', self.ns)
             if sub_account is None:
                 return None
@@ -195,7 +202,6 @@ class CTOSReportParser:
             facility_elem = sub_account.find('ns:facility', self.ns)
             facility_type = facility_elem.get('code', 'UNKNOWN') if facility_elem is not None else 'UNKNOWN'
             
-            # Get latest position (first cr_position with balance)
             cr_positions = sub_account.findall('.//ns:cr_position', self.ns)
             if not cr_positions:
                 return None
@@ -203,25 +209,30 @@ class CTOSReportParser:
             latest_position = cr_positions[0]
             balance = float(self._get_text(latest_position, 'ns:balance', '0'))
             
-            # Extract payment conduct (inst_arrears from last 12 months)
+            # Extract payment conduct codes and arrears
             conduct_codes = []
-            for pos in cr_positions[:12]:  # Last 12 months
-                inst_arrears = int(self._get_text(pos, 'ns:inst_arrears', '0'))
-                # Convert arrears to conduct code (0=current, 1=1 month late, etc.)
-                conduct_code = min(inst_arrears, 8)  # Cap at 8
-                conduct_codes.append(conduct_code)
+            mon_arrears_list = []
+            inst_arrears_list = []
             
-            # Pad to 12 months if needed
+            for pos in cr_positions[:12]:
+                inst_arrears = int(self._get_text(pos, 'ns:inst_arrears', '0'))
+                mon_arrears = int(self._get_text(pos, 'ns:mon_arrears', '0'))
+                
+                conduct_code = min(inst_arrears, 8)
+                conduct_codes.append(conduct_code)
+                mon_arrears_list.append(mon_arrears)
+                inst_arrears_list.append(inst_arrears)
+            
             while len(conduct_codes) < 12:
                 conduct_codes.append(0)
+                mon_arrears_list.append(0)
+                inst_arrears_list.append(0)
             
             payment_conduct_code = max(conduct_codes)
-            
-            # Check if all conduct codes are zero (perfect payment history)
             payment_conduct_all_zero = all(code == 0 for code in conduct_codes)
             
-            # Calculate utilization
-            utilization = (balance / limit * 100) if limit > 0 else 0
+            # ✅ Round utilization to 1 decimal place
+            utilization = round((balance / limit * 100), 1) if limit > 0 else 0.0
             
             loan = {
                 'facility_type': facility_type,
@@ -233,6 +244,8 @@ class CTOSReportParser:
                 'payment_conduct_code': payment_conduct_code,
                 'conduct_codes': conduct_codes,
                 'payment_conduct_all_zero': payment_conduct_all_zero,
+                'mon_arrears': mon_arrears_list[0],  # Latest month
+                'inst_arrears': inst_arrears_list[0],  # Latest month
                 'is_special_attention': is_special_attention
             }
             
@@ -253,23 +266,19 @@ class CTOSReportParser:
         trade_refs = []
         
         try:
-            # Check if Section E has data
             section_e = self.root.find('.//ns:section_e', self.ns)
             if section_e is None or section_e.get('data') != 'true':
                 self.logger.info("No trade reference data found")
                 return trade_refs
             
-            # Extract trade reference records
             records = section_e.findall('.//ns:record', self.ns)
             for record in records:
                 account = self._get_text(record, 'ns:account_no', '')
                 amount = float(self._get_text(record, 'ns:amount', '0').replace(',', ''))
                 
-                # Extract aging bucket from remark
                 remark = self._get_text(record, 'ns:remark', '')
                 aging_bucket = 'None'
                 if 'days' in remark.lower():
-                    # Extract aging info
                     aging_bucket = remark
                 
                 trade_refs.append({
@@ -290,7 +299,6 @@ class CTOSReportParser:
         legal_cases = []
         
         try:
-            # Extract from Section D (legal cases)
             section_d = self.root.find('.//ns:section_d', self.ns)
             if section_d is None:
                 self.logger.warning("⚠️  Section D not found in XML")
@@ -373,7 +381,6 @@ class CTOSReportParser:
         try:
             parsed_dates = []
             for date_str in dates_opened:
-                # XML format: DD-MM-YYYY
                 parts = date_str.split('-')
                 if len(parts) == 3:
                     day, month, year = parts
@@ -404,18 +411,21 @@ class CTOSReportParser:
 
 
 def normalize_data(extracted_data: Dict) -> Dict:
-    """Normalize extracted data"""
+    """Normalize extracted data - FIXED with all required fields"""
     try:
         loans = extracted_data.get('loans', [])
         trade_refs = extracted_data.get('trade_references', [])
         legal_cases = extracted_data.get('legal_cases', [])
         director_winding_up = extracted_data.get('director_winding_up', [])
         
-        # Loan records
+        # Loan records - WITH ALL REQUIRED FIELDS
         loan_records = []
         for loan in loans:
             facility_type = loan.get('facility_type', '')
             is_revolving = facility_type in ['CRDTCARD', 'OVRDRAFT']
+            
+            # ✅ Round utilization for loan records too
+            utilization = round(loan.get('utilization', 0), 1) if is_revolving else 0.0
             
             loan_records.append({
                 'Facility': _map_facility_type(facility_type),
@@ -425,32 +435,31 @@ def normalize_data(extracted_data: Dict) -> Dict:
                 'lendertype': loan.get('lender', 'Unknown'),
                 'balance': loan.get('balance', 0),
                 'limit': loan.get('limit', 0),
-                'creditutilizationratio': loan.get('utilization', 0) if is_revolving else 0,
+                'creditutilizationratio': utilization,
                 'payment_conduct_code': loan.get('payment_conduct_code', 0),
                 'payment_conduct_all_zero': loan.get('payment_conduct_all_zero', False),
+                'mon_arrears': loan.get('mon_arrears', 0),
+                'inst_arrears': loan.get('inst_arrears', 0),
                 'is_revolving': is_revolving,
-                'account_type': 'revolving' if is_revolving else 'installment'
+                'is_secured': facility_type in ['HSLNFNCE', 'PCPASCAR'],
+                'account_type': 'revolving' if is_revolving else 'installment',
+                'oldest_account_months': extracted_data.get('oldest_account_months', 0),
+                'oldest_account_years': round(extracted_data.get('oldest_account_months', 0) / 12, 1)
             })
         
-        # Calculate lender concentration
+        # Calculate portfolio metrics
         from collections import Counter
         lender_counts = Counter(loan.get('lender', 'Unknown') for loan in loans)
         accounts_per_lender = max(lender_counts.values()) if lender_counts else 0
         lender_name = max(lender_counts, key=lender_counts.get) if lender_counts else ''
         
-        # Calculate secured debt ratio
-        secured_balance = 0
+        secured_balance = sum(loan.get('balance', 0) for loan in loans 
+                             if loan.get('facility_type') in ['HSLNFNCE', 'PCPASCAR'])
         total_balance = sum(loan.get('balance', 0) for loan in loans)
+        secured_loan_ratio = round((secured_balance / total_balance * 100), 1) if total_balance > 0 else 0.0
         
-        for loan in loans:
-            if loan.get('facility_type') in ['HSLNFNCE', 'PCPASCAR']:
-                secured_balance += loan.get('balance', 0)
-        
-        secured_loan_ratio = (secured_balance / total_balance * 100) if total_balance > 0 else 0
-        
-        # Aggregates
+        # Trade reference calculations
         trade_ref_amount_overdue = sum(ref.get('amount', 0) for ref in trade_refs)
-        
         aging_bucket = 'None'
         if trade_refs:
             for ref in trade_refs:
@@ -458,28 +467,17 @@ def normalize_data(extracted_data: Dict) -> Dict:
                     aging_bucket = ref['aging_bucket']
                     break
         
+        # Legal case calculations
         legal_cases_settled = len([c for c in legal_cases if c.get('is_settled', False)])
         legal_cases_active = len([c for c in legal_cases if not c.get('is_settled', False)])
         
         logging.info(f"Legal cases: {len(legal_cases)} total, {legal_cases_settled} settled, {legal_cases_active} active")
         
-        # DEBUG: Log the legal_cases structure
-        if legal_cases:
-            logging.info(f"Legal cases data: {legal_cases}")
-        
-        # Build case_types summary string for active cases
         active_cases = [c for c in legal_cases if not c.get('is_settled', False)]
-        logging.info(f"Active cases count: {len(active_cases)}")
+        case_types = ', '.join(c.get('case_type', 'Unknown') for c in active_cases) if active_cases else ''
         
-        if active_cases:
-            case_types = ', '.join(c.get('case_type', 'Unknown') for c in active_cases)
-            logging.info(f"✓ Active case types: '{case_types}'")
-        else:
-            case_types = ''
-            logging.warning("⚠️  No active cases found for case_types")
-        
-        # Build case_details for bankruptcy (if any)
-        bankruptcy_cases = [c for c in legal_cases if 'BANKRUPTCY' in c.get('case_type', '').upper() and not c.get('is_settled', False)]
+        bankruptcy_cases = [c for c in legal_cases if 'BANKRUPTCY' in c.get('case_type', '').upper() 
+                           and not c.get('is_settled', False)]
         if bankruptcy_cases:
             case_details = f"{bankruptcy_cases[0].get('case_type', 'Bankruptcy')} - Amount: RM {bankruptcy_cases[0].get('amount', 0):,.2f}"
         else:
@@ -488,36 +486,71 @@ def normalize_data(extracted_data: Dict) -> Dict:
         director_windingup_company = len([w for w in director_winding_up if w.get('is_active', False)])
         company_name = director_winding_up[0]['company_name'] if director_winding_up else ''
         
+        # Calculate application decline rate (if we had declined applications data)
+        num_applications = extracted_data.get('numapplicationslast12months', 0)
+        num_approved = extracted_data.get('numapprovedapplications', 0)
+        application_decline_rate = 0.0
+        if num_applications > 0 and num_approved < num_applications:
+            application_decline_rate = round(((num_applications - num_approved) / num_applications) * 100, 1)
+        
+        # ✅ FIXED: Aggregate record with ALL required fields and rounded values
         aggregate_record = {
+            # Basic counts
             'numberofloans': len(loans),
             'numapplicationslast12months': extracted_data.get('numapplicationslast12months', 0),
             'numpendingapplications': extracted_data.get('numpendingapplications', 0),
+            'numapprovedapplications': extracted_data.get('numapprovedapplications', 0),
             'distinct_account_types': extracted_data.get('distinct_account_types', 0),
+            
+            # Age and history
             'oldest_account_months': extracted_data.get('oldest_account_months', 0),
+            'oldest_account_years': round(extracted_data.get('oldest_account_months', 0) / 12, 1) if extracted_data.get('oldest_account_months') else 0.0,
+            
+            # Payment conduct
             'payment_conduct_code': extracted_data.get('payment_conduct_code', 0),
+            'payment_conduct_all_zero': all(loan.get('payment_conduct_all_zero', False) for loan in loans) if loans else False,
+            
+            # Account types
             'has_credit_card': any(l['facility_type'] == 'CRDTCARD' for l in loans),
             'has_installment_loan': any(l['facility_type'] in ['HSLNFNCE', 'PCPASCAR', 'OTLNFNCE'] for l in loans),
-            'creditutilizationratio': extracted_data.get('creditutilizationratio', 0),
+            
+            # Utilization (rounded)
+            'creditutilizationratio': round(extracted_data.get('creditutilizationratio', 0), 1),
+            
+            # Trade references
             'trade_ref_amount_overdue': trade_ref_amount_overdue,
             'trade_ref_reminder_count': len(trade_refs),
             'aging_bucket': aging_bucket,
+            
+            # Legal cases
             'legal_cases_settled': legal_cases_settled,
             'legal_cases_active': legal_cases_active,
             'bankruptcy_active': any('BANKRUPTCY' in c.get('case_type', '') and not c.get('is_settled') for c in legal_cases),
+            'case_types': case_types,
+            'case_details': case_details,
+            
+            # Director issues
             'director_windingup_company': director_windingup_company,
             'company_name': company_name,
+            
+            # Portfolio metrics
             'accounts_per_lender': accounts_per_lender,
             'lender_name': lender_name,
             'secured_loan_ratio': secured_loan_ratio,
-            # Add template variables for legal cases
-            'case_types': case_types,
-            'case_details': case_details
+            
+            # Application metrics
+            'recent_enquiries': num_applications,
+            'application_decline_rate': application_decline_rate,
+            
+            # ✅ CRITICAL: CTOS score
+            'ctos_score': extracted_data.get('ctos_score', 0)
         }
         
         all_records = loan_records + [aggregate_record]
         
         logging.info(f"\n{'='*60}")
         logging.info(f"NORMALIZED: {len(loan_records)} loans + 1 aggregate")
+        logging.info(f"CTOS Score: {aggregate_record['ctos_score']}")
         logging.info(f"Trade: RM {trade_ref_amount_overdue:,.2f}, Legal: {legal_cases_settled} settled/{legal_cases_active} active")
         logging.info(f"{'='*60}\n")
         
