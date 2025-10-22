@@ -1,0 +1,78 @@
+{
+  "generated_at": "2025-10-22T14:13:10.036494",
+  "total_insights": 9,
+  "severity_counts": {
+    "medium": 1,
+    "positive": 6,
+    "critical": 1,
+    "high": 1
+  },
+  "insights_by_label": {
+    "🟠 Moderate Utilization": [
+      {
+        "type": "Elevated Credit Use",
+        "message": "Your Credit Card with Malayan Banking Berhad shows 67.2% utilization, which is above ideal levels.",
+        "recommendation": "While not critical, utilization above 50% can impact your score. Try to keep balances below 30% of your limit for optimal credit health.",
+        "severity": "medium"
+      }
+    ],
+    "🟢 Positive Pattern": [
+      {
+        "type": "Excellent Payment History",
+        "message": "Your Credit Card with Malayan Banking Berhad shows excellent payment history with no missed payments in the last 12 months.",
+        "recommendation": "Outstanding! Consistent on-time payments are the foundation of good credit. Continue this pattern to maintain and improve your score.",
+        "severity": "positive"
+      },
+      {
+        "type": "Excellent Payment History",
+        "message": "Your Car Loan with CIMB Islamic Bank Berhad shows excellent payment history with no missed payments in the last 12 months.",
+        "recommendation": "Outstanding! Consistent on-time payments are the foundation of good credit. Continue this pattern to maintain and improve your score.",
+        "severity": "positive"
+      },
+      {
+        "type": "Excellent Payment History",
+        "message": "Your Buy Now Pay Later with Standard Chartered Bank Malaysia Berhad shows excellent payment history with no missed payments in the last 12 months.",
+        "recommendation": "Outstanding! Consistent on-time payments are the foundation of good credit. Continue this pattern to maintain and improve your score.",
+        "severity": "positive"
+      }
+    ],
+    "🟠 Missed Payments": [
+      {
+        "type": "Serious Delinquency",
+        "message": "Your Other Term Loan with Perbadanan Tabung Pendidikan Tinggi Nasional (PTPTN) has serious delinquency (code 8) indicating 60+ days overdue.",
+        "recommendation": "Accounts 60+ days overdue severely damage your credit. Reach out to your lender immediately to negotiate a payment plan or restructuring.",
+        "severity": "critical"
+      },
+      {
+        "type": "Payment Conduct Issues",
+        "message": "Your Credit Card with HSBC Amanah Malaysia Berhad shows recent payment issues (code 2) in the last 12 months.",
+        "recommendation": "Payment codes 1-2 indicate missed or late payments. Contact your lender immediately to bring the account current. Set up auto-debit to prevent future delays.",
+        "severity": "high"
+      }
+    ],
+    "🟢 Low Utilization": [
+      {
+        "type": "Healthy Credit Use",
+        "message": "Your Credit Card with HSBC Amanah Malaysia Berhad utilization of 17.6% is within the ideal range.",
+        "recommendation": "Excellent! Keeping utilization below 30% is a credit best practice and positively impacts your score.",
+        "severity": "positive"
+      }
+    ],
+    "🟢 Long Credit History": [
+      {
+        "type": "Established Credit",
+        "message": "Your credit history spans 6.67 years, showing established credit experience.",
+        "recommendation": "A long credit history demonstrates stability and experience managing credit. This is a strong positive factor for lenders.",
+        "severity": "positive"
+      }
+    ],
+    "🟢 Low Application Rate": [
+      {
+        "type": "Selective Credit Seeking",
+        "message": "You've made 1 application(s) in the past year, showing selective credit use.",
+        "recommendation": "Applying for credit only when needed demonstrates financial discipline and planning.",
+        "severity": "positive"
+      }
+    ]
+  }
+}
