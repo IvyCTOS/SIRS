@@ -1,0 +1,63 @@
+{
+  "generated_at": "2025-10-22T12:46:28.248766",
+  "total_insights": 7,
+  "severity_counts": {
+    "critical": 3,
+    "high": 1,
+    "positive": 3
+  },
+  "insights_by_label": {
+    "🟠 Missed Payments": [
+      {
+        "type": "Serious Delinquency",
+        "message": "Your Other Term Loan with Perbadanan Tabung Pendidikan Tinggi Nasional (PTPTN) has serious delinquency (code 8) indicating 60+ days overdue.",
+        "recommendation": "Accounts 60+ days overdue severely damage your credit. Reach out to your lender immediately to negotiate a payment plan or restructuring.",
+        "severity": "critical"
+      },
+      {
+        "type": "Payment Conduct Issues",
+        "message": "Your Car Loan with Hong Leong Islamic Bank Berhad shows recent payment issues (code 2) in the last 12 months.",
+        "recommendation": "Payment codes 1-2 indicate missed or late payments. Contact your lender immediately to bring the account current. Set up auto-debit to prevent future delays.",
+        "severity": "high"
+      },
+      {
+        "type": "Serious Delinquency",
+        "message": "Your Credit Card with Hong Leong Bank Berhad has serious delinquency (code 8) indicating 60+ days overdue.",
+        "recommendation": "Accounts 60+ days overdue severely damage your credit. Reach out to your lender immediately to negotiate a payment plan or restructuring.",
+        "severity": "critical"
+      }
+    ],
+    "🟢 Low Utilization": [
+      {
+        "type": "Healthy Credit Use",
+        "message": "Your Credit Card with Hong Leong Bank Berhad utilization of 0.0% is within the ideal range.",
+        "recommendation": "Excellent! Keeping utilization below 30% is a credit best practice and positively impacts your score.",
+        "severity": "positive"
+      }
+    ],
+    "⚫ Legal Risk": [
+      {
+        "type": "Active Legal Summons",
+        "message": "You have 1 active legal case(s): SUMMONS - DIRECTED TO.",
+        "recommendation": "Active legal cases (summons, civil suits) severely impact creditworthiness. Engage with legal counsel and creditors immediately to settle before judgment.",
+        "severity": "critical"
+      }
+    ],
+    "🟢 Long Credit History": [
+      {
+        "type": "Established Credit",
+        "message": "Your credit history spans 14.00 years, showing established credit experience.",
+        "recommendation": "A long credit history demonstrates stability and experience managing credit. This is a strong positive factor for lenders.",
+        "severity": "positive"
+      }
+    ],
+    "🟢 Low Application Rate": [
+      {
+        "type": "Selective Credit Seeking",
+        "message": "You've made 0 application(s) in the past year, showing selective credit use.",
+        "recommendation": "Applying for credit only when needed demonstrates financial discipline and planning.",
+        "severity": "positive"
+      }
+    ]
+  }
+}
