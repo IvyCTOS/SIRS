@@ -570,11 +570,10 @@ def render_insight_card(insight: dict):
         # Add spacing
         st.divider()
 
-def render_ai_advisor():
-    """Render AI Credit Advisor modal"""
+def render_ai_advisor_content():
+    """Render AI Credit Advisor content (for modal)"""
     if not st.session_state.insights_loaded:
         # Initial greeting state
-        st.info("🤖 **AI Credit Advisor**")
         st.write("Hi there! 👋 I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations.")
         st.write("**Quick actions:**")
         
@@ -587,7 +586,7 @@ def render_ai_advisor():
         else:
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                if st.button("✨ How to improve my score?", type="primary", use_container_width=True):
+                if st.button("✨ How to improve my score?", type="primary", use_container_width=True, key="improve_score_btn"):
                     st.session_state.processing = True
                     st.rerun()
             
@@ -608,7 +607,6 @@ def render_ai_advisor():
                     st.error("❌ Failed to process report. Please try again.")
     else:
         # Show insights
-        st.info("🤖 **AI Credit Advisor**")
         st.write("Based on your credit profile, here are personalized insights and recommendations to help you improve your score:")
         
         st.markdown("---")
@@ -705,54 +703,118 @@ def main():
             if st.session_state.insights_loaded:
                 st.success("✅ Insights generated")
     
-    # Main content area
-    if not st.session_state.show_advisor:
-        # Show CTOS Score page
-        render_ctos_score_page()
+    # Always render the main CTOS Score page
+    render_ctos_score_page()
+    
+    # Add spacing
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    
+    # Position button at bottom right using columns
+    col1, col2 = st.columns([6, 1])
+    with col2:
+        if st.button("🤖 Ask AI", key="ask_ai_button", use_container_width=True):
+            st.session_state.show_advisor = True
+            st.rerun()
+    
+    # Show modal overlay if advisor is active
+    if st.session_state.show_advisor:
+        # Inject modal styles
+        st.markdown("""
+        <style>
+        /* Modal overlay */
+        .stApp {
+            position: relative;
+        }
         
-        # Add spacing
-        st.markdown("<br><br>", unsafe_allow_html=True)
+        /* Darken background when modal is open */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            backdrop-filter: blur(5px);
+        }
         
-        # Position button at bottom right using columns
-        col1, col2 = st.columns([6, 1])
-        with col2:
-            # Style the Ask AI button with green theme
-            st.markdown("""
-            <style>
-            /* Style the Ask AI button */
-            div[data-testid="stHorizontalBlock"] > div:last-child button {
-                background-color: #0e7c86;
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 50px;
-                font-weight: 600;
-                font-size: 15px;
-                box-shadow: 0 4px 12px rgba(14, 124, 134, 0.4);
-                transition: all 0.3s ease;
-            }
-            div[data-testid="stHorizontalBlock"] > div:last-child button:hover {
-                background-color: #0a5f68;
-                box-shadow: 0 6px 16px rgba(14, 124, 134, 0.6);
-                transform: translateY(-2px);
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            if st.button("🤖 Ask AI", key="ask_ai_button", use_container_width=True):
-                st.session_state.show_advisor = True
-                st.rerun()
+        /* Modal container */
+        .modal-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 1200px;
+            max-height: 85vh;
+            background: #1e1e1e;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow: hidden;
+        }
         
-    else:
-        # Show AI Advisor
-        # Back button at top
-        col1, col2 = st.columns([1, 5])
-        with col1:
-            if st.button("← Back", use_container_width=True):
-                st.session_state.show_advisor = False
-                st.rerun()
+        /* Modal header */
+        .modal-header-custom {
+            background-color: #2d3748;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #374151;
+        }
         
-        render_ai_advisor()
+        /* Modal body with scroll */
+        .modal-body-scroll {
+            max-height: calc(85vh - 80px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        /* Style the Ask AI button */
+        div[data-testid="stHorizontalBlock"] > div:last-child button[kind="primary"] {
+            background-color: #0e7c86;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(14, 124, 134, 0.4);
+            transition: all 0.3s ease;
+        }
+        div[data-testid="stHorizontalBlock"] > div:last-child button[kind="primary"]:hover {
+            background-color: #0a5f68;
+            box-shadow: 0 6px 16px rgba(14, 124, 134, 0.6);
+            transform: translateY(-2px);
+        }
+        </style>
+        
+        <div class="modal-backdrop"></div>
+        <div class="modal-container">
+            <div class="modal-header-custom">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 24px;">🤖</span>
+                    <span style="font-size: 20px; font-weight: 600; color: white;">AI Credit Advisor</span>
+                </div>
+            </div>
+            <div class="modal-body-scroll">
+        """, unsafe_allow_html=True)
+        
+        # Close button at top
+        if st.button("✕ Close", key="close_modal_btn", use_container_width=False):
+            st.session_state.show_advisor = False
+            st.session_state.insights_loaded = False
+            st.rerun()
+        
+        # Render modal content
+        render_ai_advisor_content()
+        
+        # Close modal HTML
+        st.markdown("""
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
