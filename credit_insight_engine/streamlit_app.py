@@ -279,107 +279,52 @@ def process_report_with_engine(xml_path: str):
         progress_container = st.container()
         
         with progress_container:
-            st.markdown("""
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h4 style="color: #0e7c86; margin-bottom: 15px;">🔄 Processing Your Credit Report...</h4>
-            </div>
-            """, unsafe_allow_html=True)
+            st.info("🔄 **Processing Your Credit Report...**")
             
             # Step 1: Extract data
-            st.markdown("""
-            <div class="progress-step">
-                <div class="progress-icon">📄</div>
-                <div class="progress-text">Extracting data from XML report...</div>
-            </div>
-            """, unsafe_allow_html=True)
-            time.sleep(0.5)
+            with st.spinner("📄 Extracting data from XML report..."):
+                time.sleep(0.5)
+                extracted_data = extract_data_from_xml(xml_path)
+                if not extracted_data:
+                    st.error("❌ Failed to extract data from XML")
+                    return None
             
-            extracted_data = extract_data_from_xml(xml_path)
-            if not extracted_data:
-                st.error("❌ Failed to extract data from XML")
-                return None
-            
-            st.markdown("""
-            <div class="progress-step">
-                <div class="progress-icon">✅</div>
-                <div class="progress-text">Data extracted successfully</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.success("✅ Data extracted successfully")
             
             # Step 2: Normalize data
-            st.markdown("""
-            <div class="progress-step">
-                <div class="progress-icon">🔄</div>
-                <div class="progress-text">Normalizing data structure...</div>
-            </div>
-            """, unsafe_allow_html=True)
-            time.sleep(0.5)
+            with st.spinner("🔄 Normalizing data structure..."):
+                time.sleep(0.5)
+                normalized_data = normalize_data(extracted_data)
             
-            normalized_data = normalize_data(extracted_data)
-            
-            st.markdown("""
-            <div class="progress-step">
-                <div class="progress-icon">✅</div>
-                <div class="progress-text">Data normalized successfully</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.success("✅ Data normalized successfully")
             
             # Step 3: Load rules
-            st.markdown("""
-            <div class="progress-step">
-                <div class="progress-icon">📋</div>
-                <div class="progress-text">Loading credit analysis rules...</div>
-            </div>
-            """, unsafe_allow_html=True)
-            time.sleep(0.5)
+            with st.spinner("📋 Loading credit analysis rules..."):
+                time.sleep(0.5)
+                base_dir = Path(__file__).resolve().parent
+                rules_file = base_dir / "rules" / "rules.json"
+                
+                if not rules_file.exists():
+                    st.error(f"❌ Rules file not found: {rules_file}")
+                    return None
+                
+                engine = RuleEngine(str(rules_file))
             
-            base_dir = Path(__file__).resolve().parent
-            rules_file = base_dir / "rules" / "rules.json"
-            
-            if not rules_file.exists():
-                st.error(f"❌ Rules file not found: {rules_file}")
-                return None
-            
-            engine = RuleEngine(str(rules_file))
-            
-            st.markdown(f"""
-            <div class="progress-step">
-                <div class="progress-icon">✅</div>
-                <div class="progress-text">Loaded {len(engine.rules)} analysis rules</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.success(f"✅ Loaded {len(engine.rules)} analysis rules")
             
             # Step 4: Process rules
-            st.markdown("""
-            <div class="progress-step">
-                <div class="progress-icon">🎯</div>
-                <div class="progress-text">Evaluating credit behavior patterns...</div>
-            </div>
-            """, unsafe_allow_html=True)
-            time.sleep(1.0)
-            
-            matches = engine.process_data(normalized_data)
+            with st.spinner("🎯 Evaluating credit behavior patterns..."):
+                time.sleep(1.0)
+                matches = engine.process_data(normalized_data)
             
             # Step 5: Aggregate insights
-            st.markdown("""
-            <div class="progress-step">
-                <div class="progress-icon">📊</div>
-                <div class="progress-text">Generating personalized insights...</div>
-            </div>
-            """, unsafe_allow_html=True)
-            time.sleep(0.5)
+            with st.spinner("📊 Generating personalized insights..."):
+                time.sleep(0.5)
+                aggregator = ConsoleOutputAggregator()
+                for match in matches:
+                    aggregator.add_insight(match)
             
-            aggregator = ConsoleOutputAggregator()
-            for match in matches:
-                aggregator.add_insight(match)
-            
-            st.markdown(f"""
-            <div class="progress-step">
-                <div class="progress-icon">✅</div>
-                <div class="progress-text">Found {len(matches)} insights and recommendations</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
+            st.success(f"✅ Found {len(matches)} insights and recommendations")
             time.sleep(0.5)
             
         return aggregator
@@ -421,6 +366,60 @@ def render_gauge_svg(score: int):
     </svg>
     '''
     return svg
+
+def render_ctos_score_page():
+    """Render the main CTOS Score page"""
+    # Get score from session state or use default
+    score = st.session_state.personal_info.get('ctos_score', 696)
+    
+    # Score Card with gauge
+    st.markdown(f"""
+    <div class="score-card">
+        <div class="score-header">
+            Your last generated CTOS Score was {score}. Get an updated MyCTOS Score Report to know where you stand today!
+        </div>
+        {render_gauge_svg(score)}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Display score using Streamlit native components
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        st.markdown(f"<h1 style='text-align: center; font-size: 72px; margin: 0;'>{score}</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #7f8c8d;'>👁️ Disclaimer</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #95a5a6; font-size: 12px;'>📅 Next Update: 15th November 2025</p>", unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Buttons
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.button("🔒 Get Your CTOS Score", type="primary", use_container_width=True, disabled=True)
+        st.button("📄 View Your Report Summary", use_container_width=True, disabled=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # What is Affecting My Score section
+    st.markdown("""
+    <div class="info-section">
+        <div class="info-title">What is Affecting My Score?</div>
+        <div class="radio-option">⚪ Your utilization of credit limit on revolving/charge loans is higher than average.</div>
+        <div class="radio-option">⚪ The number of credit enquiries on you is high relative to other credit users.</div>
+        <div class="radio-option">⚪ There is not enough recent auto loan information on your credit report.</div>
+        <div class="radio-option">⚪ The age of your credit facilities is shorter than average.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # How Can I Improve My Score section
+    st.markdown("""
+    <div class="info-section">
+        <div class="info-title">How Can I Improve My Score?</div>
+        <div class="radio-option">🔵 Try to avoid maxing out or utilizing close to your credit limit.</div>
+        <div class="radio-option">🔵 Try to space out your loan requests or normalize your credit usage.</div>
+        <div class="radio-option">🔵 Build up your credit profile with 1 year of good payment conduct.</div>
+        <div class="radio-option">🔵 Maintain good payment conduct on these facilities for some time longer.</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 def organize_insights_by_severity(aggregator):
     """Organize insights by severity level"""
@@ -481,40 +480,16 @@ def render_severity_summary(insights_by_severity):
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.markdown(f"""
-        <div class="severity-card severity-critical">
-            <div style="color: #dc3545; font-size: 24px;">⛔</div>
-            <div class="severity-number" style="color: #dc3545;">{critical_count}</div>
-            <div class="severity-label" style="color: #dc3545;">Critical</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric(label="⛔ Critical", value=critical_count)
     
     with col2:
-        st.markdown(f"""
-        <div class="severity-card severity-high">
-            <div style="color: #fd7e14; font-size: 24px;">⚠️</div>
-            <div class="severity-number" style="color: #fd7e14;">{high_count}</div>
-            <div class="severity-label" style="color: #fd7e14;">High</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric(label="⚠️ High", value=high_count)
     
     with col3:
-        st.markdown(f"""
-        <div class="severity-card severity-medium">
-            <div style="color: #ffc107; font-size: 24px;">⚠️</div>
-            <div class="severity-number" style="color: #ffc107;">{medium_count}</div>
-            <div class="severity-label" style="color: #ffc107;">Medium</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric(label="⚠️ Medium", value=medium_count)
     
     with col4:
-        st.markdown(f"""
-        <div class="severity-card severity-positive">
-            <div style="color: #28a745; font-size: 24px;">✅</div>
-            <div class="severity-number" style="color: #28a745;">{positive_count}</div>
-            <div class="severity-label" style="color: #28a745;">Positive</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric(label="✅ Positive", value=positive_count)
 
 def get_severity_badge(severity: str):
     """Get colored badge for severity"""
@@ -529,54 +504,58 @@ def get_severity_badge(severity: str):
     return f'<span style="background-color: {color}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">{severity.title()}</span>'
 
 def render_insight_card(insight: dict):
-    """Render individual insight card"""
+    """Render individual insight card using Streamlit native components"""
     severity = insight.get('severity', 'medium').lower()
-    badge = get_severity_badge(severity)
     
-    st.markdown(f"""
-    <div class="insight-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div class="insight-title">{insight.get('label', 'Insight')}</div>
-            {badge}
-        </div>
-        <div class="insight-description">
-            {insight.get('insight', '')}
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # Recommendation section
-    if insight.get('recommendation'):
-        st.markdown(f"""
-        <div class="recommendation-box">
-            <div class="recommendation-label">💡 Recommendation:</div>
-            <div class="recommendation-text">{insight['recommendation']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Data source
-    data_source = insight.get('data_source', 'CCRIS')
-    st.markdown(f"""
-        <div class="data-source">📊 Data Source: {data_source}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Create a container with custom styling
+    with st.container():
+        # Create columns for title and badge
+        col1, col2 = st.columns([4, 1])
+        
+        with col1:
+            st.markdown(f"**{insight.get('label', 'Insight')}**")
+        
+        with col2:
+            # Color-coded badge
+            colors = {
+                'critical': '🔴',
+                'high': '🔴',
+                'medium': '🟡',
+                'low': '⚪',
+                'positive': '🟢'
+            }
+            badge_text = {
+                'critical': 'Critical',
+                'high': 'High',
+                'medium': 'Medium',
+                'low': 'Low',
+                'positive': 'Positive'
+            }
+            icon = colors.get(severity, '⚪')
+            text = badge_text.get(severity, severity.title())
+            st.markdown(f"{icon} **{text}**")
+        
+        # Description
+        st.markdown(insight.get('insight', ''))
+        
+        # Recommendation section
+        if insight.get('recommendation'):
+            st.info(f"💡 **Recommendation:** {insight['recommendation']}")
+        
+        # Data source
+        data_source = insight.get('data_source', 'CCRIS')
+        st.caption(f"📊 Data Source: {data_source}")
+        
+        # Add spacing
+        st.markdown("---")
 
 def render_ai_advisor():
     """Render AI Credit Advisor modal"""
     if not st.session_state.insights_loaded:
         # Initial greeting state
-        st.markdown("""
-        <div style="background-color: #e8f4f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                <span style="font-size: 24px;">🤖</span>
-                <span style="font-size: 20px; font-weight: 600; color: #2c3e50;">AI Credit Advisor</span>
-            </div>
-        </div>
-        
-        <div style="background-color: #e8f4f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <p style="margin-bottom: 10px;">Hi there! 👋 I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations.</p>
-            <p style="margin-top: 15px; font-weight: 600;">Quick actions:</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.info("🤖 **AI Credit Advisor**")
+        st.write("Hi there! 👋 I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations.")
+        st.write("**Quick actions:**")
         
         # Check if XML is loaded
         if not st.session_state.xml_path:
@@ -608,15 +587,10 @@ def render_ai_advisor():
                     st.error("❌ Failed to process report. Please try again.")
     else:
         # Show insights
-        st.markdown("""
-        <div style="background-color: #e8f4f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                <span style="font-size: 24px;">🤖</span>
-                <span style="font-size: 20px; font-weight: 600; color: #2c3e50;">AI Credit Advisor</span>
-            </div>
-            <p style="color: #495057;">Based on your credit profile, here are personalized insights and recommendations to help you improve your score:</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.info("🤖 **AI Credit Advisor**")
+        st.write("Based on your credit profile, here are personalized insights and recommendations to help you improve your score:")
+        
+        st.markdown("---")
         
         if st.session_state.insights_data:
             aggregator = st.session_state.insights_data
@@ -712,6 +686,9 @@ def main():
     
     # Main content area
     if not st.session_state.show_advisor:
+        # Show CTOS Score page
+        render_ctos_score_page()
+        
         # Floating AI button at bottom
         st.markdown("<br><br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([3, 1, 3])
