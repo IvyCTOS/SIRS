@@ -605,8 +605,8 @@ def render_ai_advisor():
         </div>
         
         <div style="background-color: #e8f4f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <p style="margin-bottom: 10px;">Hi there! 👋 I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations.</p>
-            <p style="margin-top: 15px; font-weight: 600;">Quick actions:</p>
+            <p style="margin-bottom: 10px;color: #2c3e50;">Hi there! 👋 I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations.</p>
+            <p style="margin-top: 15px; font-weight: 600; color: #2c3e50;">Quick actions:</p>
         </div>
         """, unsafe_allow_html=True)
         
