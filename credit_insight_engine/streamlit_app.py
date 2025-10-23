@@ -506,6 +506,10 @@ def get_severity_badge(severity: str):
 def render_insight_card(insight: dict):
     """Render individual insight card using Streamlit native components"""
     severity = insight.get('severity', 'medium').lower()
+    label = insight.get('label', 'Insight')
+    insight_text = insight.get('insight', '')
+    recommendation = insight.get('recommendation', '')
+    data_source = insight.get('data_source', 'CCRIS')
     
     # Create a container with custom styling
     with st.container():
@@ -513,7 +517,7 @@ def render_insight_card(insight: dict):
         col1, col2 = st.columns([4, 1])
         
         with col1:
-            st.markdown(f"**{insight.get('label', 'Insight')}**")
+            st.subheader(label)
         
         with col2:
             # Color-coded badge
@@ -533,21 +537,21 @@ def render_insight_card(insight: dict):
             }
             icon = colors.get(severity, '⚪')
             text = badge_text.get(severity, severity.title())
-            st.markdown(f"{icon} **{text}**")
+            st.markdown(f"### {icon} {text}")
         
-        # Description
-        st.markdown(insight.get('insight', ''))
+        # Description - use st.write to ensure it displays
+        if insight_text:
+            st.write(insight_text)
         
         # Recommendation section
-        if insight.get('recommendation'):
-            st.info(f"💡 **Recommendation:** {insight['recommendation']}")
+        if recommendation:
+            st.info(f"💡 **Recommendation:** {recommendation}")
         
         # Data source
-        data_source = insight.get('data_source', 'CCRIS')
         st.caption(f"📊 Data Source: {data_source}")
         
         # Add spacing
-        st.markdown("---")
+        st.divider()
 
 def render_ai_advisor():
     """Render AI Credit Advisor modal"""
