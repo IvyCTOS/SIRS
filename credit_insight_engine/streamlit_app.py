@@ -564,35 +564,35 @@ def render_insight_card(insight: dict):
     # Define severity styling
     severity_styles = {
         'critical': {
-            'bg_gradient': 'linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(200, 35, 51, 0.1) 100%)',
+            'bg_gradient': 'linear-gradient(135deg, rgba(220, 53, 69, 0.2) 0%, rgba(200, 35, 51, 0.15) 100%)',
             'border': '#dc3545',
             'icon': '🔴',
             'badge_bg': '#dc3545',
             'badge_text': 'Critical'
         },
         'high': {
-            'bg_gradient': 'linear-gradient(135deg, rgba(253, 126, 20, 0.15) 0%, rgba(232, 89, 12, 0.1) 100%)',
+            'bg_gradient': 'linear-gradient(135deg, rgba(253, 126, 20, 0.2) 0%, rgba(232, 89, 12, 0.15) 100%)',
             'border': '#fd7e14',
             'icon': '🟠',
             'badge_bg': '#fd7e14',
             'badge_text': 'High'
         },
         'medium': {
-            'bg_gradient': 'linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(224, 168, 0, 0.1) 100%)',
+            'bg_gradient': 'linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(224, 168, 0, 0.15) 100%)',
             'border': '#ffc107',
             'icon': '🟡',
             'badge_bg': '#ffc107',
             'badge_text': 'Medium'
         },
         'low': {
-            'bg_gradient': 'linear-gradient(135deg, rgba(108, 117, 125, 0.15) 0%, rgba(73, 80, 87, 0.1) 100%)',
+            'bg_gradient': 'linear-gradient(135deg, rgba(108, 117, 125, 0.2) 0%, rgba(73, 80, 87, 0.15) 100%)',
             'border': '#6c757d',
             'icon': '⚪',
             'badge_bg': '#6c757d',
             'badge_text': 'Low'
         },
         'positive': {
-            'bg_gradient': 'linear-gradient(135deg, rgba(40, 167, 69, 0.15) 0%, rgba(33, 136, 56, 0.1) 100%)',
+            'bg_gradient': 'linear-gradient(135deg, rgba(40, 167, 69, 0.2) 0%, rgba(33, 136, 56, 0.15) 100%)',
             'border': '#28a745',
             'icon': '🟢',
             'badge_bg': '#28a745',
@@ -602,7 +602,7 @@ def render_insight_card(insight: dict):
     
     style = severity_styles.get(severity, severity_styles['medium'])
     
-    # Render card with modern styling
+    # Render card with modern styling and VISIBLE TEXT
     st.markdown(f"""
     <div style="background: {style['bg_gradient']}; 
                 border-left: 4px solid {style['border']}; 
@@ -613,7 +613,7 @@ def render_insight_card(insight: dict):
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 24px;">{style['icon']}</span>
-                <span style="font-size: 18px; font-weight: 600; color: #2c3e50;">{label}</span>
+                <span style="font-size: 18px; font-weight: 600; color: #ffffff;">{label}</span>
             </div>
             <span style="background: {style['badge_bg']}; 
                          color: white; 
@@ -624,33 +624,33 @@ def render_insight_card(insight: dict):
                 {style['badge_text']}
             </span>
         </div>
-        <div style="color: #495057; font-size: 15px; line-height: 1.6; margin: 12px 0;">
+        <div style="color: #e0e0e0; font-size: 15px; line-height: 1.6; margin: 12px 0;">
             {insight_text}
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Recommendation box
+    # Recommendation box with visible text
     if recommendation:
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, rgba(255, 248, 225, 0.5) 0%, rgba(255, 236, 179, 0.3) 100%); 
-                    border-left: 4px solid #856404;
+        <div style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.25) 0%, rgba(255, 193, 7, 0.15) 100%); 
+                    border-left: 4px solid #ffc107;
                     border-radius: 12px; 
                     padding: 16px; 
                     margin: 12px 0 16px 0;">
             <div style="display: flex; align-items: start; gap: 10px;">
                 <span style="font-size: 20px; margin-top: 2px;">💡</span>
                 <div>
-                    <div style="font-weight: 600; color: #856404; margin-bottom: 6px;">Recommendation:</div>
-                    <div style="color: #856404; font-size: 14px; line-height: 1.5;">{recommendation}</div>
+                    <div style="font-weight: 600; color: #ffffff; margin-bottom: 6px;">Recommendation:</div>
+                    <div style="color: #e0e0e0; font-size: 14px; line-height: 1.5;">{recommendation}</div>
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
     
-    # Data source
+    # Data source with visible text
     st.markdown(f"""
-    <div style="color: #6c757d; font-size: 12px; margin-top: 8px; margin-bottom: 20px;">
+    <div style="color: #a0a0a0; font-size: 12px; margin-top: 8px; margin-bottom: 20px;">
         📊 Data Source: {data_source}
     </div>
     """, unsafe_allow_html=True)
