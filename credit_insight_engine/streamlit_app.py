@@ -431,11 +431,16 @@ def organize_insights_by_severity(aggregator):
         'positive': []
     }
     
-    # Check if aggregator has insights attribute
+    # Check different possible data structures
     if hasattr(aggregator, 'insights'):
         insights = aggregator.insights
     elif hasattr(aggregator, 'get_all_insights'):
         insights = aggregator.get_all_insights()
+    elif hasattr(aggregator, 'insights_by_label'):
+        # If it's organized by label, flatten it
+        insights = []
+        for label, insight_list in aggregator.insights_by_label.items():
+            insights.extend(insight_list)
     else:
         # Try to get insights from the object directly
         insights = getattr(aggregator, '_insights', [])
@@ -451,17 +456,27 @@ def organize_insights_by_category(aggregator):
     """Organize insights by category"""
     insights_by_category = {}
     
-    # Check if aggregator has insights attribute
+    # Check if aggregator has insights_by_label (which is the category structure)
+    if hasattr(aggregator, 'insights_by_label'):
+        # Already organized by label/category
+        insights_by_label = aggregator.insights_by_label
+        for label, insight_list in insights_by_label.items():
+            # Clean up the label (remove emoji prefix if needed for grouping)
+            category = label
+            insights_by_category[category] = insight_list
+        return insights_by_category
+    
+    # Otherwise, try to organize from a flat list
     if hasattr(aggregator, 'insights'):
         insights = aggregator.insights
     elif hasattr(aggregator, 'get_all_insights'):
         insights = aggregator.get_all_insights()
     else:
-        # Try to get insights from the object directly
         insights = getattr(aggregator, '_insights', [])
     
     for insight in insights:
-        category = insight.get('category', 'Other')
+        # Try different possible category field names
+        category = insight.get('category', insight.get('label', insight.get('type', 'Other')))
         if category not in insights_by_category:
             insights_by_category[category] = []
         insights_by_category[category].append(insight)
@@ -506,8 +521,10 @@ def get_severity_badge(severity: str):
 def render_insight_card(insight: dict):
     """Render individual insight card using Streamlit native components"""
     severity = insight.get('severity', 'medium').lower()
-    label = insight.get('label', 'Insight')
-    insight_text = insight.get('insight', '')
+    
+    # Get the correct field names from your JSON structure
+    label = insight.get('type', insight.get('label', 'Insight'))
+    insight_text = insight.get('message', insight.get('insight', ''))
     recommendation = insight.get('recommendation', '')
     data_source = insight.get('data_source', 'CCRIS')
     
