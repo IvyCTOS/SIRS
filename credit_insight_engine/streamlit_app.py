@@ -710,11 +710,36 @@ def main():
         # Show CTOS Score page
         render_ctos_score_page()
         
-        # Floating AI button at bottom
+        # Add spacing
         st.markdown("<br><br>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns([3, 1, 3])
+        
+        # Position button at bottom right using columns
+        col1, col2 = st.columns([6, 1])
         with col2:
-            if st.button("🤖 Ask AI", type="primary", use_container_width=True):
+            # Style the Ask AI button with green theme
+            st.markdown("""
+            <style>
+            /* Style the Ask AI button */
+            div[data-testid="stHorizontalBlock"] > div:last-child button {
+                background-color: #0e7c86;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 50px;
+                font-weight: 600;
+                font-size: 15px;
+                box-shadow: 0 4px 12px rgba(14, 124, 134, 0.4);
+                transition: all 0.3s ease;
+            }
+            div[data-testid="stHorizontalBlock"] > div:last-child button:hover {
+                background-color: #0a5f68;
+                box-shadow: 0 6px 16px rgba(14, 124, 134, 0.6);
+                transform: translateY(-2px);
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            if st.button("🤖 Ask AI", key="ask_ai_button", use_container_width=True):
                 st.session_state.show_advisor = True
                 st.rerun()
         
