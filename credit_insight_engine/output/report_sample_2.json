@@ -1,18 +1,18 @@
 {
-  "generated_at": "2025-10-22T14:13:10.036494",
-  "total_insights": 9,
+  "generated_at": "2025-10-22T16:12:40.006156",
+  "total_insights": 14,
   "severity_counts": {
-    "medium": 1,
-    "positive": 6,
+    "medium": 2,
+    "positive": 8,
     "critical": 1,
-    "high": 1
+    "high": 3
   },
   "insights_by_label": {
     "🟠 Moderate Utilization": [
       {
         "type": "Elevated Credit Use",
         "message": "Your Credit Card with Malayan Banking Berhad shows 67.2% utilization, which is above ideal levels.",
-        "recommendation": "While not critical, utilization above 50% can impact your score. Try to keep balances below 30% of your limit for optimal credit health.",
+        "recommendation": "While not critical, utilization above 50% can impact your score. Try to keep balances below 30% by paying down approximately RM 1862.0.",
         "severity": "medium"
       }
     ],
@@ -36,15 +36,31 @@
         "severity": "positive"
       }
     ],
-    "🟠 Missed Payments": [
+    "🟠 Serious Delinquency": [
       {
-        "type": "Serious Delinquency",
-        "message": "Your Other Term Loan with Perbadanan Tabung Pendidikan Tinggi Nasional (PTPTN) has serious delinquency (code 8) indicating 60+ days overdue.",
-        "recommendation": "Accounts 60+ days overdue severely damage your credit. Reach out to your lender immediately to negotiate a payment plan or restructuring.",
+        "type": "Extended Payment Default",
+        "message": "Your Other Term Loan with Perbadanan Tabung Pendidikan Tinggi Nasional (PTPTN) has serious delinquency (code 8), indicating 120+ days overdue.",
+        "recommendation": "CRITICAL: Accounts 120+ days overdue may be referred for legal action. Contact Perbadanan Tabung Pendidikan Tinggi Nasional (PTPTN) immediately to negotiate restructuring or settlement. This severely damages credit for up to 2 years.",
         "severity": "critical"
+      }
+    ],
+    "⚠️ Worsening Payment Pattern": [
+      {
+        "type": "Deteriorating Conduct",
+        "message": "Your Other Term Loan with Perbadanan Tabung Pendidikan Tinggi Nasional (PTPTN) shows payment issues despite having 6.7 years of credit history.",
+        "recommendation": "Payment problems on established accounts suggest changing financial circumstances. Review your budget urgently and consider credit counseling if you're experiencing financial hardship.",
+        "severity": "high"
       },
       {
-        "type": "Payment Conduct Issues",
+        "type": "Deteriorating Conduct",
+        "message": "Your Credit Card with HSBC Amanah Malaysia Berhad shows payment issues despite having 6.7 years of credit history.",
+        "recommendation": "Payment problems on established accounts suggest changing financial circumstances. Review your budget urgently and consider credit counseling if you're experiencing financial hardship.",
+        "severity": "high"
+      }
+    ],
+    "🟠 Missed Payments": [
+      {
+        "type": "Early Stage Delinquency",
         "message": "Your Credit Card with HSBC Amanah Malaysia Berhad shows recent payment issues (code 2) in the last 12 months.",
         "recommendation": "Payment codes 1-2 indicate missed or late payments. Contact your lender immediately to bring the account current. Set up auto-debit to prevent future delays.",
         "severity": "high"
@@ -54,14 +70,14 @@
       {
         "type": "Healthy Credit Use",
         "message": "Your Credit Card with HSBC Amanah Malaysia Berhad utilization of 17.6% is within the ideal range.",
-        "recommendation": "Excellent! Keeping utilization below 30% is a credit best practice and positively impacts your score.",
+        "recommendation": "Excellent! Keeping utilization below 30% is a credit best practice and positively impacts your score. This shows responsible credit management.",
         "severity": "positive"
       }
     ],
     "🟢 Long Credit History": [
       {
         "type": "Established Credit",
-        "message": "Your credit history spans 6.67 years, showing established credit experience.",
+        "message": "Your credit history spans 6.7 years, showing established credit experience.",
         "recommendation": "A long credit history demonstrates stability and experience managing credit. This is a strong positive factor for lenders.",
         "severity": "positive"
       }
@@ -72,6 +88,30 @@
         "message": "You've made 1 application(s) in the past year, showing selective credit use.",
         "recommendation": "Applying for credit only when needed demonstrates financial discipline and planning.",
         "severity": "positive"
+      }
+    ],
+    "🟢 Diverse Credit Mix": [
+      {
+        "type": "Balanced Account Types",
+        "message": "Your credit file shows 4 different account types, demonstrating diverse credit management.",
+        "recommendation": "Excellent! A diverse credit mix (cards, installment loans, etc.) shows lenders you can manage different types of credit responsibly.",
+        "severity": "positive"
+      }
+    ],
+    "🟢 Clean Legal Record": [
+      {
+        "type": "No Legal Issues",
+        "message": "Your credit report shows no legal cases or bankruptcy proceedings.",
+        "recommendation": "Excellent! A clean legal record is a strong positive indicator of creditworthiness.",
+        "severity": "positive"
+      }
+    ],
+    "ℹ️ Fair CTOS Score": [
+      {
+        "type": "Moderate Credit Rating",
+        "message": "Your CTOS score of 506 is in the 'Fair' range (500-649), suggesting room for improvement.",
+        "recommendation": "IMPROVEMENT PLAN: Focus on keeping utilization below 30%, making all payments on time, and avoiding new applications for 3-6 months. Your score can reach 'Good' (650+) within 6 months with consistent effort.",
+        "severity": "medium"
       }
     ]
   }
