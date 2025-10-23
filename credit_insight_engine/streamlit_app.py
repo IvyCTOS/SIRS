@@ -422,84 +422,52 @@ def render_gauge_svg(score: int):
     '''
     return svg
 
-def render_ctos_score_page():
-    """Render the main CTOS Score page"""
-    # Get score from session state or use default
-    score = st.session_state.personal_info.get('ctos_score', 696)
+def organize_insights_by_severity(aggregator):
+    """Organize insights by severity level"""
+    insights_by_severity = {
+        'critical': [],
+        'high': [],
+        'medium': [],
+        'low': [],
+        'positive': []
+    }
     
-    # Score Card - Split into parts
-    st.markdown(f"""
-    <div class="score-card">
-        <div class="score-header">
-            Your last generated CTOS Score was {score}. Get an updated MyCTOS Score Report to know where you stand today!
-        </div>
-        {render_gauge_svg(score)}
-    </div>
-    """, unsafe_allow_html=True)
+    # Check if aggregator has insights attribute
+    if hasattr(aggregator, 'insights'):
+        insights = aggregator.insights
+    elif hasattr(aggregator, 'get_all_insights'):
+        insights = aggregator.get_all_insights()
+    else:
+        # Try to get insights from the object directly
+        insights = getattr(aggregator, '_insights', [])
     
-    # Score number and labels using Streamlit native
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown(f"""
-        <div style="text-align: center; background: white; padding: 0 40px 40px 40px; margin-top: -20px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin-left: auto; margin-right: auto;">
-            <div style="font-size: 72px; font-weight: bold; color: #2c3e50; margin: 0;">{score}</div>
-            <div style="color: #7f8c8d; font-size: 14px; margin: 10px 0;">👁️ Disclaimer</div>
-            <div style="color: #95a5a6; font-size: 12px; margin-bottom: 30px;">📅 Next Update: 15th November 2025</div>
-        </div>
-        """, unsafe_allow_html=True)
+    for insight in insights:
+        severity = insight.get('severity', 'medium').lower()
+        if severity in insights_by_severity:
+            insights_by_severity[severity].append(insight)
     
-    # Buttons
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.button("🔒 Get Your CTOS Score", type="primary", use_container_width=True, disabled=True)
-        st.button("📄 View Your Report Summary", use_container_width=True, disabled=True)
+    return insights_by_severity
+
+def organize_insights_by_category(aggregator):
+    """Organize insights by category"""
+    insights_by_category = {}
     
-    st.markdown("<br>", unsafe_allow_html=True)
+    # Check if aggregator has insights attribute
+    if hasattr(aggregator, 'insights'):
+        insights = aggregator.insights
+    elif hasattr(aggregator, 'get_all_insights'):
+        insights = aggregator.get_all_insights()
+    else:
+        # Try to get insights from the object directly
+        insights = getattr(aggregator, '_insights', [])
     
-    # What is Affecting My Score section
-    st.markdown("""
-    <div class="info-section">
-        <div class="info-title">What is Affecting My Score?</div>
-        <div class="radio-option">⚪ Your utilization of credit limit on revolving/charge loans is higher than average.</div>
-        <div class="radio-option">⚪ The number of credit enquiries on you is high relative to other credit users.</div>
-        <div class="radio-option">⚪ There is not enough recent auto loan information on your credit report.</div>
-        <div class="radio-option">⚪ The age of your credit facilities is shorter than average.</div>
-    </div>
-    """, unsafe_allow_html=True)
+    for insight in insights:
+        category = insight.get('category', 'Other')
+        if category not in insights_by_category:
+            insights_by_category[category] = []
+        insights_by_category[category].append(insight)
     
-    # How Can I Improve My Score section
-    st.markdown("""
-    <div class="info-section">
-        <div class="info-title">How Can I Improve My Score?</div>
-        <div class="radio-option">🔵 Try to avoid maxing out or utilizing close to your credit limit.</div>
-        <div class="radio-option">🔵 Try to space out your loan requests or normalize your credit usage.</div>
-        <div class="radio-option">🔵 Build up your credit profile with 1 year of good payment conduct.</div>
-        <div class="radio-option">🔵 Maintain good payment conduct on these facilities for some time longer.</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Where do you stand section
-    st.markdown("""
-    <div class="info-section">
-        <div class="info-title" style="color: #0e7c86;">Where do you stand?</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Use columns for better layout
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.markdown("""
-        <div style="background: white; padding: 0 30px; margin-top: -20px;">
-            <div class="info-subtitle">📈 Comparing to your last score</div>
-            <div class="radio-option">📊 Fair</div>
-            
-            <div class="info-subtitle" style="margin-top: 30px;">Your CTOS Score of ranks among Malaysians</div>
-            <div class="radio-option">👥 You vs. Malaysians</div>
-            <div class="radio-option">👤 By Gender</div>
-            <div class="radio-option">📅 Your age group</div>
-            <div style="height: 30px;"></div>
-        </div>
-        """, unsafe_allow_html=True)
+    return insights_by_category
 
 def render_severity_summary(insights_by_severity):
     """Render severity summary cards"""
@@ -605,8 +573,8 @@ def render_ai_advisor():
         </div>
         
         <div style="background-color: #e8f4f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <p style="margin-bottom: 10px;color: #2c3e50;">Hi there! 👋 I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations.</p>
-            <p style="margin-top: 15px; font-weight: 600; color: #2c3e50;">Quick actions:</p>
+            <p style="margin-bottom: 10px;">Hi there! 👋 I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations.</p>
+            <p style="margin-top: 15px; font-weight: 600;">Quick actions:</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -652,8 +620,10 @@ def render_ai_advisor():
         
         if st.session_state.insights_data:
             aggregator = st.session_state.insights_data
-            insights_by_severity = aggregator.get_insights_by_severity()
-            insights_by_category = aggregator.get_insights_by_category()
+            
+            # Organize insights
+            insights_by_severity = organize_insights_by_severity(aggregator)
+            insights_by_category = organize_insights_by_category(aggregator)
             
             # Render severity summary
             render_severity_summary(insights_by_severity)
@@ -711,7 +681,22 @@ def main():
                 st.session_state.xml_path = str(temp_path)
         
         st.markdown("---")
-               
+        
+        # Use sample data button
+        if st.button("📊 Use Sample Report", use_container_width=True):
+            base_dir = Path(__file__).resolve().parent
+            sample_xml = base_dir / "data" / "sample_2.xml"
+            
+            if sample_xml.exists():
+                with st.spinner("Loading sample report..."):
+                    if load_xml_file(str(sample_xml)):
+                        st.success("✅ Sample report loaded!")
+                        st.info("💡 Click 'Ask AI' to get personalized insights")
+                    else:
+                        st.error("❌ Failed to load sample report")
+            else:
+                st.warning("⚠️ Sample report not found at data/sample_2.xml")
+        
         # Info
         st.markdown("---")
         st.markdown("### ℹ️ About")
@@ -727,9 +712,6 @@ def main():
     
     # Main content area
     if not st.session_state.show_advisor:
-        # Show CTOS Score page
-        render_ctos_score_page()
-        
         # Floating AI button at bottom
         st.markdown("<br><br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([3, 1, 3])
