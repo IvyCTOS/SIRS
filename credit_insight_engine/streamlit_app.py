@@ -7,11 +7,15 @@ import json
 from pathlib import Path
 from datetime import datetime
 import sys
+import time
 
 # Import your existing backend modules
-from engine.credit_rule_engine import RuleEngine
-from engine.data_input import extract_data_from_xml, normalize_data
-from engine.output_aggregator import ConsoleOutputAggregator
+try:
+    from engine.credit_rule_engine import RuleEngine
+    from engine.data_input import extract_data_from_xml, normalize_data
+    from engine.output_aggregator import ConsoleOutputAggregator
+except ImportError:
+    st.error("⚠️ Backend modules not found. Please ensure engine package is available.")
 
 # Page configuration
 st.set_page_config(
@@ -27,12 +31,16 @@ st.markdown("""
     /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     
     /* Main container styling */
     .main {
         background-color: #e8f4f5;
         padding: 0;
+    }
+    
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
     
     /* CTOS Score Card */
@@ -52,17 +60,11 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
-    .score-gauge {
-        width: 200px;
-        height: 100px;
-        margin: 20px auto;
-    }
-    
     .score-number {
         font-size: 72px;
         font-weight: bold;
         color: #2c3e50;
-        margin: 10px 0;
+        margin: 20px 0;
     }
     
     .score-label {
@@ -75,30 +77,6 @@ st.markdown("""
         color: #95a5a6;
         font-size: 12px;
         margin-bottom: 30px;
-    }
-    
-    .ctos-button {
-        background-color: #0e7c86;
-        color: white;
-        padding: 12px 24px;
-        border-radius: 6px;
-        border: none;
-        width: 100%;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        margin-bottom: 10px;
-    }
-    
-    .ctos-button-secondary {
-        background-color: #f8f9fa;
-        color: #495057;
-        padding: 12px 24px;
-        border-radius: 6px;
-        border: 1px solid #dee2e6;
-        width: 100%;
-        font-size: 14px;
-        cursor: pointer;
     }
     
     /* Info sections */
@@ -131,54 +109,8 @@ st.markdown("""
         font-size: 14px;
     }
     
-    /* AI Button */
-    .ai-button {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        background-color: #0e7c86;
-        color: white;
-        padding: 15px 25px;
-        border-radius: 50px;
-        box-shadow: 0 4px 12px rgba(14, 124, 134, 0.4);
-        cursor: pointer;
-        font-weight: 600;
-        z-index: 1000;
-        border: none;
-        font-size: 16px;
-    }
-    
-    /* AI Advisor Modal */
-    .advisor-header {
-        background-color: #e8f4f5;
-        padding: 20px;
-        border-radius: 8px 8px 0 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    
-    .advisor-icon {
-        color: #0e7c86;
-        font-size: 24px;
-    }
-    
-    .advisor-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: #2c3e50;
-    }
-    
-    .advisor-intro {
-        background-color: #e8f4f5;
-        padding: 20px;
-        border-radius: 8px;
-        margin: 20px 0;
-        color: #495057;
-    }
-    
     /* Severity Summary */
-    .severity-summary {
+    .severity-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 15px;
@@ -214,7 +146,7 @@ st.markdown("""
     .severity-number {
         font-size: 32px;
         font-weight: bold;
-        margin-bottom: 5px;
+        margin: 10px 0;
     }
     
     .severity-label {
@@ -223,27 +155,6 @@ st.markdown("""
     }
     
     /* Insight Cards */
-    .insight-category {
-        background-color: white;
-        border: 2px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 20px;
-        margin: 15px 0;
-    }
-    
-    .insight-category-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-    }
-    
-    .category-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #2c3e50;
-    }
-    
     .insight-card {
         background-color: #f8f9fa;
         border-left: 4px solid #0e7c86;
@@ -252,49 +163,11 @@ st.markdown("""
         border-radius: 4px;
     }
     
-    .insight-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-    
     .insight-title {
         font-size: 16px;
         font-weight: 600;
         color: #2c3e50;
-    }
-    
-    .badge {
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-    }
-    
-    .badge-critical {
-        background-color: #dc3545;
-        color: white;
-    }
-    
-    .badge-high {
-        background-color: #fd7e14;
-        color: white;
-    }
-    
-    .badge-medium {
-        background-color: #ffc107;
-        color: #333;
-    }
-    
-    .badge-low {
-        background-color: #6c757d;
-        color: white;
-    }
-    
-    .badge-positive {
-        background-color: #28a745;
-        color: white;
+        margin-bottom: 10px;
     }
     
     .insight-description {
@@ -327,20 +200,38 @@ st.markdown("""
         margin-top: 10px;
     }
     
-    /* Category badge colors */
-    .category-badge {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 8px;
+    /* Buttons */
+    .stButton > button {
+        width: 100%;
+        border-radius: 6px;
+        padding: 12px 24px;
+        font-weight: 500;
     }
     
-    .badge-utilization { background-color: #ff9800; }
-    .badge-payment { background-color: #f44336; }
-    .badge-history { background-color: #2196f3; }
-    .badge-legal { background-color: #9c27b0; }
-    .badge-positive { background-color: #4caf50; }
+    div[data-testid="stButton"] {
+        margin-bottom: 10px;
+    }
+    
+    /* Progress indicator */
+    .progress-step {
+        background: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin: 10px 0;
+        border-left: 4px solid #0e7c86;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .progress-icon {
+        font-size: 20px;
+    }
+    
+    .progress-text {
+        color: #2c3e50;
+        font-size: 14px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -354,91 +245,208 @@ def initialize_session_state():
         st.session_state.insights_data = None
     if 'personal_info' not in st.session_state:
         st.session_state.personal_info = {}
+    if 'xml_path' not in st.session_state:
+        st.session_state.xml_path = None
+    if 'processing' not in st.session_state:
+        st.session_state.processing = False
 
-def load_and_process_report(xml_path: str):
-    """Load and process CTOS XML report"""
+def load_xml_file(xml_path: str):
+    """Load XML file and extract basic info for display"""
     try:
-        # Extract data from XML
+        # Just extract basic data for the score page
         extracted_data = extract_data_from_xml(xml_path)
         if not extracted_data:
-            return None, None
+            return False
         
-        # Normalize data
-        normalized_data = normalize_data(extracted_data)
+        # Store basic personal info and XML path
+        st.session_state.personal_info = {
+            'name': extracted_data.get('name', 'User'),
+            'ic_number': extracted_data.get('ic_number', 'N/A'),
+            'ctos_score': extracted_data.get('ctos_score', 696),
+        }
+        st.session_state.xml_path = xml_path
         
-        # Store personal info
-        st.session_state.personal_info = normalized_data.get('personal_info', {})
-        
-        # Load rules and process
-        base_dir = Path(__file__).resolve().parent
-        rules_file = base_dir / "rules" / "rules.json"
-        
-        engine = RuleEngine(str(rules_file))
-        matches = engine.process_data(normalized_data)
-        
-        # Aggregate insights
-        aggregator = ConsoleOutputAggregator()
-        for match in matches:
-            aggregator.add_insight(match)
-        
-        return aggregator, normalized_data
+        return True
         
     except Exception as e:
-        st.error(f"Error processing report: {str(e)}")
-        return None, None
+        st.error(f"Error loading XML: {str(e)}")
+        return False
 
-def render_gauge(score: int):
-    """Render score gauge using HTML/CSS"""
+def process_report_with_engine(xml_path: str):
+    """Process CTOS XML report with rule engine"""
+    try:
+        # Progress indicator placeholder
+        progress_container = st.container()
+        
+        with progress_container:
+            st.markdown("""
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h4 style="color: #0e7c86; margin-bottom: 15px;">🔄 Processing Your Credit Report...</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Step 1: Extract data
+            st.markdown("""
+            <div class="progress-step">
+                <div class="progress-icon">📄</div>
+                <div class="progress-text">Extracting data from XML report...</div>
+            </div>
+            """, unsafe_allow_html=True)
+            time.sleep(0.5)
+            
+            extracted_data = extract_data_from_xml(xml_path)
+            if not extracted_data:
+                st.error("❌ Failed to extract data from XML")
+                return None
+            
+            st.markdown("""
+            <div class="progress-step">
+                <div class="progress-icon">✅</div>
+                <div class="progress-text">Data extracted successfully</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Step 2: Normalize data
+            st.markdown("""
+            <div class="progress-step">
+                <div class="progress-icon">🔄</div>
+                <div class="progress-text">Normalizing data structure...</div>
+            </div>
+            """, unsafe_allow_html=True)
+            time.sleep(0.5)
+            
+            normalized_data = normalize_data(extracted_data)
+            
+            st.markdown("""
+            <div class="progress-step">
+                <div class="progress-icon">✅</div>
+                <div class="progress-text">Data normalized successfully</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Step 3: Load rules
+            st.markdown("""
+            <div class="progress-step">
+                <div class="progress-icon">📋</div>
+                <div class="progress-text">Loading credit analysis rules...</div>
+            </div>
+            """, unsafe_allow_html=True)
+            time.sleep(0.5)
+            
+            base_dir = Path(__file__).resolve().parent
+            rules_file = base_dir / "rules" / "rules.json"
+            
+            if not rules_file.exists():
+                st.error(f"❌ Rules file not found: {rules_file}")
+                return None
+            
+            engine = RuleEngine(str(rules_file))
+            
+            st.markdown(f"""
+            <div class="progress-step">
+                <div class="progress-icon">✅</div>
+                <div class="progress-text">Loaded {len(engine.rules)} analysis rules</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Step 4: Process rules
+            st.markdown("""
+            <div class="progress-step">
+                <div class="progress-icon">🎯</div>
+                <div class="progress-text">Evaluating credit behavior patterns...</div>
+            </div>
+            """, unsafe_allow_html=True)
+            time.sleep(1.0)
+            
+            matches = engine.process_data(normalized_data)
+            
+            # Step 5: Aggregate insights
+            st.markdown("""
+            <div class="progress-step">
+                <div class="progress-icon">📊</div>
+                <div class="progress-text">Generating personalized insights...</div>
+            </div>
+            """, unsafe_allow_html=True)
+            time.sleep(0.5)
+            
+            aggregator = ConsoleOutputAggregator()
+            for match in matches:
+                aggregator.add_insight(match)
+            
+            st.markdown(f"""
+            <div class="progress-step">
+                <div class="progress-icon">✅</div>
+                <div class="progress-text">Found {len(matches)} insights and recommendations</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            time.sleep(0.5)
+            
+        return aggregator
+        
+    except Exception as e:
+        st.error(f"❌ Error processing report: {str(e)}")
+        import traceback
+        st.error(traceback.format_exc())
+        return None
+
+def render_gauge_svg(score: int):
+    """Render score gauge using SVG"""
     # Determine color based on score
     if score >= 750:
-        color = "#4caf50"  # Green
+        needle_color = "#4caf50"
     elif score >= 650:
-        color = "#8bc34a"  # Light green
+        needle_color = "#8bc34a"
     elif score >= 550:
-        color = "#ffc107"  # Yellow
+        needle_color = "#ffc107"
     else:
-        color = "#ff5722"  # Red
+        needle_color = "#ff5722"
     
-    gauge_html = f"""
-    <div style="position: relative; width: 200px; height: 100px; margin: 0 auto;">
-        <svg viewBox="0 0 200 100" style="width: 100%; height: 100%;">
-            <defs>
-                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style="stop-color:#ff5722;stop-opacity:1" />
-                    <stop offset="50%" style="stop-color:#ffc107;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#4caf50;stop-opacity:1" />
-                </linearGradient>
-            </defs>
-            <path d="M 20 90 A 80 80 0 0 1 180 90" fill="none" stroke="url(#gaugeGradient)" stroke-width="20" stroke-linecap="round"/>
-            <line x1="100" y1="90" x2="100" y2="30" stroke="{color}" stroke-width="3" 
-                  transform="rotate({-90 + (score/850)*180} 100 90)" stroke-linecap="round"/>
-        </svg>
-    </div>
-    """
-    return gauge_html
+    # Calculate rotation angle (-90 to 90 degrees)
+    rotation = -90 + (score / 850) * 180
+    
+    svg = f'''
+    <svg viewBox="0 0 200 120" style="width: 200px; height: 120px; margin: 20px auto; display: block;">
+        <defs>
+            <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#ff5722;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#ffc107;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#4caf50;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <path d="M 20 90 A 80 80 0 0 1 180 90" fill="none" stroke="url(#gaugeGradient)" stroke-width="20" stroke-linecap="round"/>
+        <line x1="100" y1="90" x2="100" y2="30" stroke="{needle_color}" stroke-width="3" 
+              transform="rotate({rotation} 100 90)" stroke-linecap="round"/>
+        <circle cx="100" cy="90" r="5" fill="{needle_color}"/>
+    </svg>
+    '''
+    return svg
 
 def render_ctos_score_page():
     """Render the main CTOS Score page"""
     # Get score from session state or use default
     score = st.session_state.personal_info.get('ctos_score', 696)
-    name = st.session_state.personal_info.get('name', 'User')
     
+    # Score Card
     st.markdown(f"""
     <div class="score-card">
         <div class="score-header">
             Your last generated CTOS Score was {score}. Get an updated MyCTOS Score Report to know where you stand today!
         </div>
-        
-        {render_gauge(score)}
-        
+        {render_gauge_svg(score)}
         <div class="score-number">{score}</div>
         <div class="score-label">👁️ Disclaimer</div>
         <div class="score-date">📅 Next Update: 15th November 2025</div>
-        
-        <button class="ctos-button">Get Your CTOS Score</button>
-        <button class="ctos-button-secondary">📄 View Your Report Summary</button>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Buttons
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.button("🔒 Get Your CTOS Score", type="primary", use_container_width=True, disabled=True)
+        st.button("📄 View Your Report Summary", use_container_width=True, disabled=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # What is Affecting My Score section
     st.markdown("""
@@ -483,18 +491,14 @@ def render_severity_summary(insights_by_severity):
     medium_count = len(insights_by_severity.get('medium', []))
     positive_count = len(insights_by_severity.get('positive', []))
     
-    st.markdown("""
-    <div style="margin: 20px 0;">
-        <h3 style="color: #2c3e50; margin-bottom: 20px;">Summary by Severity</h3>
-        <div class="severity-summary">
-    """, unsafe_allow_html=True)
+    st.markdown("### Summary by Severity")
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown(f"""
         <div class="severity-card severity-critical">
-            <div style="color: #dc3545;">⛔</div>
+            <div style="color: #dc3545; font-size: 24px;">⛔</div>
             <div class="severity-number" style="color: #dc3545;">{critical_count}</div>
             <div class="severity-label" style="color: #dc3545;">Critical</div>
         </div>
@@ -503,7 +507,7 @@ def render_severity_summary(insights_by_severity):
     with col2:
         st.markdown(f"""
         <div class="severity-card severity-high">
-            <div style="color: #fd7e14;">⚠️</div>
+            <div style="color: #fd7e14; font-size: 24px;">⚠️</div>
             <div class="severity-number" style="color: #fd7e14;">{high_count}</div>
             <div class="severity-label" style="color: #fd7e14;">High</div>
         </div>
@@ -512,7 +516,7 @@ def render_severity_summary(insights_by_severity):
     with col3:
         st.markdown(f"""
         <div class="severity-card severity-medium">
-            <div style="color: #ffc107;">⚠️</div>
+            <div style="color: #ffc107; font-size: 24px;">⚠️</div>
             <div class="severity-number" style="color: #ffc107;">{medium_count}</div>
             <div class="severity-label" style="color: #ffc107;">Medium</div>
         </div>
@@ -521,37 +525,34 @@ def render_severity_summary(insights_by_severity):
     with col4:
         st.markdown(f"""
         <div class="severity-card severity-positive">
-            <div style="color: #28a745;">✅</div>
+            <div style="color: #28a745; font-size: 24px;">✅</div>
             <div class="severity-number" style="color: #28a745;">{positive_count}</div>
             <div class="severity-label" style="color: #28a745;">Positive</div>
         </div>
         """, unsafe_allow_html=True)
-    
-    st.markdown("</div></div>", unsafe_allow_html=True)
 
-def get_category_info(category: str):
-    """Get category display information"""
-    category_map = {
-        'Credit Utilization': ('🟠', 'badge-utilization'),
-        'Moderate Utilization': ('🟠', 'badge-utilization'),
-        'Payment History': ('🔴', 'badge-payment'),
-        'Missed Payments': ('🔴', 'badge-payment'),
-        'Credit Age': ('🔵', 'badge-history'),
-        'Legal Issues': ('🟣', 'badge-legal'),
-        'Positive Indicators': ('🟢', 'badge-positive')
+def get_severity_badge(severity: str):
+    """Get colored badge for severity"""
+    colors = {
+        'critical': '#dc3545',
+        'high': '#fd7e14',
+        'medium': '#ffc107',
+        'low': '#6c757d',
+        'positive': '#28a745'
     }
-    return category_map.get(category, ('⚪', 'badge-utilization'))
+    color = colors.get(severity.lower(), '#6c757d')
+    return f'<span style="background-color: {color}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">{severity.title()}</span>'
 
 def render_insight_card(insight: dict):
     """Render individual insight card"""
     severity = insight.get('severity', 'medium').lower()
-    badge_class = f"badge-{severity}"
+    badge = get_severity_badge(severity)
     
     st.markdown(f"""
     <div class="insight-card">
-        <div class="insight-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div class="insight-title">{insight.get('label', 'Insight')}</div>
-            <span class="badge {badge_class}">{severity.title()}</span>
+            {badge}
         </div>
         <div class="insight-description">
             {insight.get('insight', '')}
@@ -579,28 +580,56 @@ def render_ai_advisor():
     if not st.session_state.insights_loaded:
         # Initial greeting state
         st.markdown("""
-        <div class="advisor-header">
-            <span class="advisor-icon">🤖</span>
-            <span class="advisor-title">AI Credit Advisor</span>
+        <div style="background-color: #e8f4f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <span style="font-size: 24px;">🤖</span>
+                <span style="font-size: 20px; font-weight: 600; color: #2c3e50;">AI Credit Advisor</span>
+            </div>
         </div>
-        <div class="advisor-intro">
-            <p>Hi there! 👋 I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations.</p>
-            <p style="margin-top: 15px;"><strong>Quick actions:</strong></p>
+        
+        <div style="background-color: #e8f4f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin-bottom: 10px;">Hi there! 👋 I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations.</p>
+            <p style="margin-top: 15px; font-weight: 600;">Quick actions:</p>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("✨ How to improve my score?", use_container_width=True):
-            st.session_state.insights_loaded = True
-            st.rerun()
+        # Check if XML is loaded
+        if not st.session_state.xml_path:
+            st.warning("⚠️ Please load a CTOS report first using the sidebar.")
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.button("✨ How to improve my score?", type="primary", use_container_width=True, disabled=True)
+        else:
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button("✨ How to improve my score?", type="primary", use_container_width=True):
+                    st.session_state.processing = True
+                    st.rerun()
+            
+            # Process if button was clicked
+            if st.session_state.processing:
+                aggregator = process_report_with_engine(st.session_state.xml_path)
+                
+                if aggregator:
+                    st.session_state.insights_data = aggregator
+                    st.session_state.insights_loaded = True
+                    st.session_state.processing = False
+                    
+                    st.success("✅ Analysis complete! Loading your personalized insights...")
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.session_state.processing = False
+                    st.error("❌ Failed to process report. Please try again.")
     else:
         # Show insights
         st.markdown("""
-        <div class="advisor-header">
-            <span class="advisor-icon">🤖</span>
-            <span class="advisor-title">AI Credit Advisor</span>
-        </div>
-        <div class="advisor-intro">
-            Based on your credit profile, here are personalized insights and recommendations to help you improve your score:
+        <div style="background-color: #e8f4f5; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <span style="font-size: 24px;">🤖</span>
+                <span style="font-size: 20px; font-weight: 600; color: #2c3e50;">AI Credit Advisor</span>
+            </div>
+            <p style="color: #495057;">Based on your credit profile, here are personalized insights and recommendations to help you improve your score:</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -615,11 +644,21 @@ def render_ai_advisor():
             st.markdown("<br>", unsafe_allow_html=True)
             
             # Render insights by category
+            category_icons = {
+                'Credit Utilization': '🟠',
+                'Moderate Utilization': '🟠',
+                'Payment History': '🔴',
+                'Missed Payments': '🔴',
+                'Credit Age': '🔵',
+                'Legal Issues': '🟣',
+                'Positive Indicators': '🟢'
+            }
+            
             for category, insights in insights_by_category.items():
                 if not insights:
                     continue
                 
-                icon, badge_class = get_category_info(category)
+                icon = category_icons.get(category, '⚪')
                 
                 with st.expander(f"{icon} {category} ({len(insights)})", expanded=True):
                     for insight in insights:
@@ -629,9 +668,11 @@ def main():
     """Main application"""
     initialize_session_state()
     
-    # Sidebar for file upload (hidden by default)
+    # Sidebar for file upload
     with st.sidebar:
         st.title("📁 Upload CTOS Report")
+        st.markdown("---")
+        
         uploaded_file = st.file_uploader("Upload XML Report", type=['xml'])
         
         if uploaded_file:
@@ -640,59 +681,71 @@ def main():
             with open(temp_path, 'wb') as f:
                 f.write(uploaded_file.read())
             
-            # Process the report
-            with st.spinner("Processing report..."):
-                aggregator, normalized_data = load_and_process_report(str(temp_path))
-                
-                if aggregator:
-                    st.session_state.insights_data = aggregator
-                    st.success("✅ Report processed successfully!")
+            # Load the XML file (just basic info)
+            with st.spinner("Loading report..."):
+                if load_xml_file(str(temp_path)):
+                    st.success("✅ Report loaded successfully!")
+                    st.info("💡 Click 'Ask AI' to get personalized insights")
                 else:
-                    st.error("❌ Failed to process report")
+                    st.error("❌ Failed to load report")
             
-            # Clean up temp file
-            if temp_path.exists():
-                temp_path.unlink()
+            # Keep temp file for later processing
+            if not st.session_state.xml_path:
+                st.session_state.xml_path = str(temp_path)
+        
+        st.markdown("---")
         
         # Use sample data button
-        if st.button("📊 Use Sample Report"):
+        if st.button("📊 Use Sample Report", use_container_width=True):
             base_dir = Path(__file__).resolve().parent
             sample_xml = base_dir / "data" / "sample_2.xml"
             
             if sample_xml.exists():
                 with st.spinner("Loading sample report..."):
-                    aggregator, normalized_data = load_and_process_report(str(sample_xml))
-                    
-                    if aggregator:
-                        st.session_state.insights_data = aggregator
+                    if load_xml_file(str(sample_xml)):
                         st.success("✅ Sample report loaded!")
+                        st.info("💡 Click 'Ask AI' to get personalized insights")
                     else:
                         st.error("❌ Failed to load sample report")
             else:
-                st.error("Sample report not found")
+                st.warning("⚠️ Sample report not found at data/sample_2.xml")
+        
+        # Info
+        st.markdown("---")
+        st.markdown("### ℹ️ About")
+        st.markdown("CTOS Credit Behavior Insight Engine")
+        st.markdown("Powered by AI")
+        
+        if st.session_state.xml_path:
+            st.markdown("---")
+            st.markdown("### 📊 Status")
+            st.success("✅ Report loaded")
+            if st.session_state.insights_loaded:
+                st.success("✅ Insights generated")
     
     # Main content area
     if not st.session_state.show_advisor:
         # Show CTOS Score page
         render_ctos_score_page()
         
-        # Floating AI button
-        if st.button("🤖 Ask AI", key="ask_ai_btn"):
-            st.session_state.show_advisor = True
-            st.rerun()
+        # Floating AI button at bottom
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns([3, 1, 3])
+        with col2:
+            if st.button("🤖 Ask AI", type="primary", use_container_width=True):
+                st.session_state.show_advisor = True
+                st.rerun()
         
     else:
         # Show AI Advisor
-        col1, col2, col3 = st.columns([1, 3, 1])
-        
-        with col2:
-            # Back button
-            if st.button("← Back to CTOS Score"):
+        # Back button at top
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            if st.button("← Back", use_container_width=True):
                 st.session_state.show_advisor = False
-                st.session_state.insights_loaded = False
                 st.rerun()
-            
-            render_ai_advisor()
+        
+        render_ai_advisor()
 
 if __name__ == "__main__":
     main()
