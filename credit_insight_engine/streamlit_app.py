@@ -714,7 +714,7 @@ def main():
         st.markdown("""
         <style>
         /* Style the Ask AI button with CTOS green */
-        div[data-testid="column"]:last-child div[data-testid="stButton"] button {
+        button[kind="secondary"][data-testid="baseButton-secondary"] {
             background-color: #0e7c86 !important;
             color: white !important;
             border: none !important;
@@ -723,18 +723,39 @@ def main():
             font-weight: 600 !important;
             font-size: 15px !important;
             box-shadow: 0 4px 12px rgba(14, 124, 134, 0.4) !important;
+            transition: all 0.3s ease !important;
         }
-        div[data-testid="column"]:last-child div[data-testid="stButton"] button:hover {
+        button[kind="secondary"][data-testid="baseButton-secondary"]:hover {
             background-color: #0a5f68 !important;
             box-shadow: 0 6px 16px rgba(14, 124, 134, 0.6) !important;
+            transform: translateY(-2px) !important;
         }
+                    
+        /* Alternative selector for Ask AI button */
+        .stButton button {
+            background-color: #0e7c86 !important;
+            color: white !important;
+            border: none !important;
+            padding: 12px 20px !important;
+            border-radius: 50px !important;
+            font-weight: 600 !important;
+            font-size: 15px !important;
+            box-shadow: 0 4px 12px rgba(14, 124, 134, 0.4) !important;
+            transition: all 0.3s ease !important;
+        }
+        .stButton button:hover {
+            background-color: #0a5f68 !important;
+            box-shadow: 0 6px 16px rgba(14, 124, 134, 0.6) !important;
+            transform: translateY(-2px) !important;
+        }
+
         </style>
         """, unsafe_allow_html=True)
         
         # Position button at bottom right using columns
         col1, col2 = st.columns([6, 1])
         with col2:
-            if st.button("🤖 Ask AI", key="ask_ai_button", use_container_width=True):
+            if st.button("🤖 Ask AI", key="ask_ai_button", use_container_width=True, type="primary"):
                 st.session_state.show_advisor = True
                 st.rerun()
     else:
