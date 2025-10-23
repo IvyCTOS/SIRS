@@ -427,18 +427,26 @@ def render_ctos_score_page():
     # Get score from session state or use default
     score = st.session_state.personal_info.get('ctos_score', 696)
     
-    # Score Card
+    # Score Card - Split into parts
     st.markdown(f"""
     <div class="score-card">
         <div class="score-header">
             Your last generated CTOS Score was {score}. Get an updated MyCTOS Score Report to know where you stand today!
         </div>
         {render_gauge_svg(score)}
-        <div class="score-number">{score}</div>
-        <div class="score-label">👁️ Disclaimer</div>
-        <div class="score-date">📅 Next Update: 15th November 2025</div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Score number and labels using Streamlit native
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown(f"""
+        <div style="text-align: center; background: white; padding: 0 40px 40px 40px; margin-top: -20px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin-left: auto; margin-right: auto;">
+            <div style="font-size: 72px; font-weight: bold; color: #2c3e50; margin: 0;">{score}</div>
+            <div style="color: #7f8c8d; font-size: 14px; margin: 10px 0;">👁️ Disclaimer</div>
+            <div style="color: #95a5a6; font-size: 12px; margin-bottom: 30px;">📅 Next Update: 15th November 2025</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Buttons
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -474,15 +482,24 @@ def render_ctos_score_page():
     st.markdown("""
     <div class="info-section">
         <div class="info-title" style="color: #0e7c86;">Where do you stand?</div>
-        <div class="info-subtitle">📈 Comparing to your last score</div>
-        <div class="radio-option">📊 Fair</div>
-        
-        <div class="info-subtitle" style="margin-top: 30px;">Your CTOS Score of ranks among Malaysians</div>
-        <div class="radio-option">👥 You vs. Malaysians</div>
-        <div class="radio-option">👤 By Gender</div>
-        <div class="radio-option">📅 Your age group</div>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Use columns for better layout
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown("""
+        <div style="background: white; padding: 0 30px; margin-top: -20px;">
+            <div class="info-subtitle">📈 Comparing to your last score</div>
+            <div class="radio-option">📊 Fair</div>
+            
+            <div class="info-subtitle" style="margin-top: 30px;">Your CTOS Score of ranks among Malaysians</div>
+            <div class="radio-option">👥 You vs. Malaysians</div>
+            <div class="radio-option">👤 By Gender</div>
+            <div class="radio-option">📅 Your age group</div>
+            <div style="height: 30px;"></div>
+        </div>
+        """, unsafe_allow_html=True)
 
 def render_severity_summary(insights_by_severity):
     """Render severity summary cards"""
@@ -694,22 +711,7 @@ def main():
                 st.session_state.xml_path = str(temp_path)
         
         st.markdown("---")
-        
-        # Use sample data button
-        if st.button("📊 Use Sample Report", use_container_width=True):
-            base_dir = Path(__file__).resolve().parent
-            sample_xml = base_dir / "data" / "sample_2.xml"
-            
-            if sample_xml.exists():
-                with st.spinner("Loading sample report..."):
-                    if load_xml_file(str(sample_xml)):
-                        st.success("✅ Sample report loaded!")
-                        st.info("💡 Click 'Ask AI' to get personalized insights")
-                    else:
-                        st.error("❌ Failed to load sample report")
-            else:
-                st.warning("⚠️ Sample report not found at data/sample_2.xml")
-        
+               
         # Info
         st.markdown("---")
         st.markdown("### ℹ️ About")
