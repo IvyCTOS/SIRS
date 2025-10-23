@@ -484,27 +484,60 @@ def organize_insights_by_category(aggregator):
     return insights_by_category
 
 def render_severity_summary(insights_by_severity):
-    """Render severity summary cards"""
+    """Render severity summary cards with modern design"""
     critical_count = len(insights_by_severity.get('critical', []))
     high_count = len(insights_by_severity.get('high', []))
     medium_count = len(insights_by_severity.get('medium', []))
     positive_count = len(insights_by_severity.get('positive', []))
     
     st.markdown("### Summary by Severity")
+    st.markdown("<br>", unsafe_allow_html=True)
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric(label="⛔ Critical", value=critical_count)
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); 
+                    padding: 25px; border-radius: 16px; text-align: center; 
+                    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);">
+            <div style="font-size: 28px; margin-bottom: 8px;">⛔</div>
+            <div style="font-size: 36px; font-weight: bold; color: white; margin: 10px 0;">{critical_count}</div>
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9);">Critical</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        st.metric(label="⚠️ High", value=high_count)
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%); 
+                    padding: 25px; border-radius: 16px; text-align: center; 
+                    box-shadow: 0 4px 12px rgba(253, 126, 20, 0.3);">
+            <div style="font-size: 28px; margin-bottom: 8px;">⚠️</div>
+            <div style="font-size: 36px; font-weight: bold; color: white; margin: 10px 0;">{high_count}</div>
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9);">High</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
-        st.metric(label="⚠️ Medium", value=medium_count)
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%); 
+                    padding: 25px; border-radius: 16px; text-align: center; 
+                    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);">
+            <div style="font-size: 28px; margin-bottom: 8px;">⚠️</div>
+            <div style="font-size: 36px; font-weight: bold; color: white; margin: 10px 0;">{medium_count}</div>
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9);">Medium</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col4:
-        st.metric(label="✅ Positive", value=positive_count)
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); 
+                    padding: 25px; border-radius: 16px; text-align: center; 
+                    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);">
+            <div style="font-size: 28px; margin-bottom: 8px;">✅</div>
+            <div style="font-size: 36px; font-weight: bold; color: white; margin: 10px 0;">{positive_count}</div>
+            <div style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9);">Positive</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 def get_severity_badge(severity: str):
     """Get colored badge for severity"""
@@ -519,7 +552,7 @@ def get_severity_badge(severity: str):
     return f'<span style="background-color: {color}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">{severity.title()}</span>'
 
 def render_insight_card(insight: dict):
-    """Render individual insight card using Streamlit native components"""
+    """Render individual insight card with modern design"""
     severity = insight.get('severity', 'medium').lower()
     
     # Get the correct field names from your JSON structure
@@ -528,64 +561,163 @@ def render_insight_card(insight: dict):
     recommendation = insight.get('recommendation', '')
     data_source = insight.get('data_source', 'CCRIS')
     
-    # Create a container with custom styling
-    with st.container():
-        # Create columns for title and badge
-        col1, col2 = st.columns([4, 1])
-        
-        with col1:
-            st.subheader(label)
-        
-        with col2:
-            # Color-coded badge
-            colors = {
-                'critical': '🔴',
-                'high': '🔴',
-                'medium': '🟡',
-                'low': '⚪',
-                'positive': '🟢'
-            }
-            badge_text = {
-                'critical': 'Critical',
-                'high': 'High',
-                'medium': 'Medium',
-                'low': 'Low',
-                'positive': 'Positive'
-            }
-            icon = colors.get(severity, '⚪')
-            text = badge_text.get(severity, severity.title())
-            st.markdown(f"### {icon} {text}")
-        
-        # Description - use st.write to ensure it displays
-        if insight_text:
-            st.write(insight_text)
-        
-        # Recommendation section
-        if recommendation:
-            st.info(f"💡 **Recommendation:** {recommendation}")
-        
-        # Data source
-        st.caption(f"📊 Data Source: {data_source}")
-        
-        # Add spacing
-        st.divider()
+    # Define severity styling
+    severity_styles = {
+        'critical': {
+            'bg_gradient': 'linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(200, 35, 51, 0.1) 100%)',
+            'border': '#dc3545',
+            'icon': '🔴',
+            'badge_bg': '#dc3545',
+            'badge_text': 'Critical'
+        },
+        'high': {
+            'bg_gradient': 'linear-gradient(135deg, rgba(253, 126, 20, 0.15) 0%, rgba(232, 89, 12, 0.1) 100%)',
+            'border': '#fd7e14',
+            'icon': '🟠',
+            'badge_bg': '#fd7e14',
+            'badge_text': 'High'
+        },
+        'medium': {
+            'bg_gradient': 'linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(224, 168, 0, 0.1) 100%)',
+            'border': '#ffc107',
+            'icon': '🟡',
+            'badge_bg': '#ffc107',
+            'badge_text': 'Medium'
+        },
+        'low': {
+            'bg_gradient': 'linear-gradient(135deg, rgba(108, 117, 125, 0.15) 0%, rgba(73, 80, 87, 0.1) 100%)',
+            'border': '#6c757d',
+            'icon': '⚪',
+            'badge_bg': '#6c757d',
+            'badge_text': 'Low'
+        },
+        'positive': {
+            'bg_gradient': 'linear-gradient(135deg, rgba(40, 167, 69, 0.15) 0%, rgba(33, 136, 56, 0.1) 100%)',
+            'border': '#28a745',
+            'icon': '🟢',
+            'badge_bg': '#28a745',
+            'badge_text': 'Positive'
+        }
+    }
+    
+    style = severity_styles.get(severity, severity_styles['medium'])
+    
+    # Render card with modern styling
+    st.markdown(f"""
+    <div style="background: {style['bg_gradient']}; 
+                border-left: 4px solid {style['border']}; 
+                border-radius: 12px; 
+                padding: 20px; 
+                margin: 16px 0;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">{style['icon']}</span>
+                <span style="font-size: 18px; font-weight: 600; color: #2c3e50;">{label}</span>
+            </div>
+            <span style="background: {style['badge_bg']}; 
+                         color: white; 
+                         padding: 4px 12px; 
+                         border-radius: 20px; 
+                         font-size: 12px; 
+                         font-weight: 600;">
+                {style['badge_text']}
+            </span>
+        </div>
+        <div style="color: #495057; font-size: 15px; line-height: 1.6; margin: 12px 0;">
+            {insight_text}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Recommendation box
+    if recommendation:
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, rgba(255, 248, 225, 0.5) 0%, rgba(255, 236, 179, 0.3) 100%); 
+                    border-left: 4px solid #856404;
+                    border-radius: 12px; 
+                    padding: 16px; 
+                    margin: 12px 0 16px 0;">
+            <div style="display: flex; align-items: start; gap: 10px;">
+                <span style="font-size: 20px; margin-top: 2px;">💡</span>
+                <div>
+                    <div style="font-weight: 600; color: #856404; margin-bottom: 6px;">Recommendation:</div>
+                    <div style="color: #856404; font-size: 14px; line-height: 1.5;">{recommendation}</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Data source
+    st.markdown(f"""
+    <div style="color: #6c757d; font-size: 12px; margin-top: 8px; margin-bottom: 20px;">
+        📊 Data Source: {data_source}
+    </div>
+    """, unsafe_allow_html=True)
 
 def render_ai_advisor_content():
     """Render AI Credit Advisor content (for modal)"""
     if not st.session_state.insights_loaded:
-        # Initial greeting state
-        st.write("Hi there! 👋 I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations.")
-        st.write("**Quick actions:**")
+        # Initial greeting state with improved design
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, rgba(14, 124, 134, 0.2) 0%, rgba(10, 95, 104, 0.1) 100%); 
+                    border-radius: 16px; 
+                    padding: 30px; 
+                    margin: 20px 0;
+                    border-left: 4px solid #0e7c86;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: start; gap: 15px;">
+                <span style="font-size: 32px;">👋</span>
+                <div>
+                    <h3 style="color: white; margin: 0 0 10px 0;">Hi there!</h3>
+                    <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.6; margin: 0;">
+                        I'm your AI Credit Advisor. I can help you understand your credit score and provide personalized recommendations to improve your financial health.
+                    </p>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
         
         # Check if XML is loaded
         if not st.session_state.xml_path:
-            st.warning("⚠️ Please load a CTOS report first using the sidebar.")
+            st.warning("⚠️ Please load a CTOS report first using the sidebar.", icon="⚠️")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 st.button("✨ How to improve my score?", type="primary", use_container_width=True, disabled=True)
         else:
+            st.markdown("""
+            <div style="text-align: center; margin: 30px 0;">
+                <p style="color: rgba(255, 255, 255, 0.8); font-size: 16px; font-weight: 600; margin-bottom: 20px;">
+                    Quick actions:
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
+                # Custom styled button
+                st.markdown("""
+                <style>
+                button[key="improve_score_btn"] {
+                    background: linear-gradient(135deg, #0e7c86 0%, #0a5f68 100%) !important;
+                    color: white !important;
+                    padding: 16px 32px !important;
+                    border-radius: 12px !important;
+                    font-size: 16px !important;
+                    font-weight: 600 !important;
+                    border: none !important;
+                    box-shadow: 0 6px 20px rgba(14, 124, 134, 0.4) !important;
+                    transition: all 0.3s ease !important;
+                }
+                button[key="improve_score_btn"]:hover {
+                    transform: translateY(-2px) !important;
+                    box-shadow: 0 8px 25px rgba(14, 124, 134, 0.6) !important;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
                 if st.button("✨ How to improve my score?", type="primary", use_container_width=True, key="improve_score_btn"):
                     st.session_state.processing = True
                     st.rerun()
@@ -606,10 +738,20 @@ def render_ai_advisor_content():
                     st.session_state.processing = False
                     st.error("❌ Failed to process report. Please try again.")
     else:
-        # Show insights
-        st.write("Based on your credit profile, here are personalized insights and recommendations to help you improve your score:")
+        # Show insights header
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, rgba(14, 124, 134, 0.2) 0%, rgba(10, 95, 104, 0.1) 100%); 
+                    border-radius: 16px; 
+                    padding: 20px; 
+                    margin: 20px 0;
+                    border-left: 4px solid #0e7c86;">
+            <p style="color: rgba(255, 255, 255, 0.9); font-size: 16px; margin: 0; line-height: 1.6;">
+                Based on your credit profile, here are personalized insights and recommendations to help you improve your score:
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        st.markdown("---")
+        st.markdown("<br>", unsafe_allow_html=True)
         
         if st.session_state.insights_data:
             aggregator = st.session_state.insights_data
@@ -621,10 +763,47 @@ def render_ai_advisor_content():
             # Render severity summary
             render_severity_summary(insights_by_severity)
             
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<br><br>", unsafe_allow_html=True)
             
-            # Render insights by category
+            # Render insights by category with improved styling
+            st.markdown("""
+            <style>
+            /* Style the expanders */
+            .streamlit-expanderHeader {
+                background: linear-gradient(135deg, rgba(14, 124, 134, 0.1) 0%, rgba(10, 95, 104, 0.05) 100%);
+                border-radius: 10px;
+                padding: 12px 16px;
+                font-weight: 600;
+                font-size: 16px;
+                border-left: 4px solid #0e7c86;
+            }
+            
+            .streamlit-expanderHeader:hover {
+                background: linear-gradient(135deg, rgba(14, 124, 134, 0.15) 0%, rgba(10, 95, 104, 0.1) 100%);
+            }
+            
+            /* Add spacing between expanders */
+            .streamlit-expander {
+                margin-bottom: 16px;
+                border: none;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                border-radius: 10px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
             category_icons = {
+                '🟠 Moderate Utilization': '🟠',
+                '🔴 Serious Delinquency': '🔴',
+                '⚠️ Worsening Payment Pattern': '⚠️',
+                '🟠 Missed Payments': '🟠',
+                '🟢 Low Utilization': '🟢',
+                '🟢 Long Credit History': '🟢',
+                '🟢 Low Application Rate': '🟢',
+                '🟢 Diverse Credit Mix': '🟢',
+                '🟢 Clean Legal Record': '🟢',
+                '🟢 Positive Pattern': '🟢',
+                'ℹ️ Fair CTOS Score': 'ℹ️',
                 'Credit Utilization': '🟠',
                 'Moderate Utilization': '🟠',
                 'Payment History': '🔴',
@@ -638,9 +817,10 @@ def render_ai_advisor_content():
                 if not insights:
                     continue
                 
-                icon = category_icons.get(category, '⚪')
+                # Use category name directly since it already has emoji
+                display_name = category
                 
-                with st.expander(f"{icon} {category} ({len(insights)})", expanded=True):
+                with st.expander(f"{display_name} ({len(insights)})", expanded=True):
                     for insight in insights:
                         render_insight_card(insight)
 
@@ -713,8 +893,8 @@ def main():
         # Style the Ask AI button with green theme  
         st.markdown("""
         <style>
-        /* Style the Ask AI button with CTOS green */
-        button[kind="secondary"][data-testid="baseButton-secondary"] {
+        /* Style the Ask AI button with CTOS green - target primary buttons */
+        button[kind="primary"] {
             background-color: #0e7c86 !important;
             color: white !important;
             border: none !important;
@@ -725,41 +905,22 @@ def main():
             box-shadow: 0 4px 12px rgba(14, 124, 134, 0.4) !important;
             transition: all 0.3s ease !important;
         }
-        button[kind="secondary"][data-testid="baseButton-secondary"]:hover {
+        button[kind="primary"]:hover {
             background-color: #0a5f68 !important;
             box-shadow: 0 6px 16px rgba(14, 124, 134, 0.6) !important;
             transform: translateY(-2px) !important;
         }
-                    
-        /* Alternative selector for Ask AI button */
-        .stButton button {
-            background-color: #0e7c86 !important;
-            color: white !important;
-            border: none !important;
-            padding: 12px 20px !important;
-            border-radius: 50px !important;
-            font-weight: 600 !important;
-            font-size: 15px !important;
-            box-shadow: 0 4px 12px rgba(14, 124, 134, 0.4) !important;
-            transition: all 0.3s ease !important;
-        }
-        .stButton button:hover {
-            background-color: #0a5f68 !important;
-            box-shadow: 0 6px 16px rgba(14, 124, 134, 0.6) !important;
-            transform: translateY(-2px) !important;
-        }
-
         </style>
         """, unsafe_allow_html=True)
         
         # Position button at bottom right using columns
         col1, col2 = st.columns([6, 1])
         with col2:
-            if st.button("🤖 Ask AI", key="ask_ai_button", use_container_width=True, type="primary"):
+            if st.button("🤖 Ask AI", key="ask_ai_button", type="primary", use_container_width=True):
                 st.session_state.show_advisor = True
                 st.rerun()
     else:
-        # Show modal-style overlay
+        # Show modal-style overlay with improved styling
         st.markdown("""
         <style>
         /* Modal styling */
@@ -768,14 +929,54 @@ def main():
         }
         
         .main .block-container {
-            max-width: 1200px;
-            padding-top: 1rem;
+            max-width: 1400px;
+            padding-top: 2rem;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Gradient background for modal */
+        .main {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         }
         
         /* Style close button */
         div[data-testid="stButton"] button[key="close_advisor"] {
             background-color: #dc3545;
             color: white;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        div[data-testid="stButton"] button[key="close_advisor"]:hover {
+            background-color: #c82333;
+            transform: scale(1.05);
+        }
+        
+        /* Improve scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(14, 124, 134, 0.6);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(14, 124, 134, 0.8);
         }
         </style>
         """, unsafe_allow_html=True)
@@ -783,7 +984,15 @@ def main():
         # Header with close button
         col1, col2 = st.columns([5, 1])
         with col1:
-            st.title("🤖 AI Credit Advisor")
+            st.markdown("""
+            <h1 style="color: white; display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                <span style="font-size: 36px;">🤖</span>
+                <span>AI Credit Advisor</span>
+            </h1>
+            <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 20px;">
+                Personalized insights to help improve your credit score
+            </p>
+            """, unsafe_allow_html=True)
         with col2:
             if st.button("✕ Close", key="close_advisor", use_container_width=True):
                 st.session_state.show_advisor = False
